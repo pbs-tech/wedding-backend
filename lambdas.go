@@ -47,8 +47,9 @@ func createLambdas(ctx *pulumi.Context) (*lambda.Function, *lambda.Function, err
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			".": pulumi.NewFileArchive("./bin/auth.zip"),
 		}),
-		Handler: pulumi.String("auth"),
-		Role:    role.Arn,
+		Handler:       pulumi.String("auth"),
+		Role:          role.Arn,
+		Architectures: pulumi.StringArray{pulumi.String("arm64")},
 	}, pulumi.DependsOn([]pulumi.Resource{logPolicy}))
 	if err != nil {
 		return nil, nil, err
@@ -58,8 +59,9 @@ func createLambdas(ctx *pulumi.Context) (*lambda.Function, *lambda.Function, err
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			".": pulumi.NewFileArchive("./bin/rsvp.zip"),
 		}),
-		Handler: pulumi.String("rsvp"),
-		Role:    role.Arn,
+		Handler:       pulumi.String("rsvp"),
+		Role:          role.Arn,
+		Architectures: pulumi.StringArray{pulumi.String("arm64")},
 	}, pulumi.DependsOn([]pulumi.Resource{logPolicy}))
 	if err != nil {
 		return nil, nil, err
