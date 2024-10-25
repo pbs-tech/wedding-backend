@@ -6,4 +6,4 @@ build_auth:
 
 build_rsvp:
 	GOOS=linux GOARCH=amd64 go build -o ./bin/rsvp ./rsvp/handler.go
-	zip -j ./bin/rsvp.zip ./bin/rsvp
+	zip -j ./bin/rsvp.zip ./bin/rsvpgo 
