@@ -7,8 +7,9 @@ import (
 )
 
 func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
-	role, logPolicy, err := createLambdaIamRolePolicy(ctx)
-	authLambda, err := lambda.NewFunction(ctx, "auth-lambda", &lambda.FunctionArgs{
+	lambdaName := "auth-lambda"
+	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
+	authLambda, err := lambda.NewFunction(ctx, lambdaName, &lambda.FunctionArgs{
 		Runtime: lambda.RuntimeCustomAL2023,
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			".": pulumi.NewFileArchive("./bin/auth.zip"),
@@ -29,8 +30,12 @@ func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Fu
 }
 
 func createRSVPLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
-	role, logPolicy, err := createLambdaIamRolePolicy(ctx)
-	rsvpLambda, err := lambda.NewFunction(ctx, "rsvp-lambda", &lambda.FunctionArgs{
+	lambdaName := "auth-lambda"
+	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
+	if err != nil {
+		return nil, err
+	}
+	rsvpLambda, err := lambda.NewFunction(ctx, lambdaName, &lambda.FunctionArgs{
 		Runtime: lambda.RuntimeCustomAL2023,
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
 			".": pulumi.NewFileArchive("./bin/rsvp.zip"),
@@ -50,7 +55,7 @@ func createRSVPLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Fu
 	return rsvpLambda, nil
 }
 
-func createLambdaIamRolePolicy(ctx *pulumi.Context) (*iam.Role, *iam.RolePolicy, error) {
+func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string) (*iam.Role, *iam.RolePolicy, error) {
 	role, err := iam.NewRole(ctx, "auth-exec-role", &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(`{
 			"Version": "2012-10-17",
@@ -67,7 +72,7 @@ func createLambdaIamRolePolicy(ctx *pulumi.Context) (*iam.Role, *iam.RolePolicy,
 	if err != nil {
 		return nil, nil, err
 	}
-	logPolicy, err := iam.NewRolePolicy(ctx, "lambda-log-policy", &iam.RolePolicyArgs{
+	logPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-log-policy", &iam.RolePolicyArgs{
 		Role: role.Name,
 		Policy: pulumi.String(`{
 			"Version": "2012-10-17",
