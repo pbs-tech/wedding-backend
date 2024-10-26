@@ -59,7 +59,7 @@ func createRSVPLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Fu
 }
 
 func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string) (*iam.Role, *iam.RolePolicy, error) {
-	role, err := iam.NewRole(ctx, "auth-exec-role", &iam.RoleArgs{
+	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(`{
 			"Version": "2012-10-17",
 			"Statement": [{
