@@ -5,21 +5,17 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createDynamodbTable(ctx *pulumi.Context) (*dynamodb.Table, error) {
-	return dynamodb.NewTable(ctx, "wedding-guests", &dynamodb.TableArgs{
-		Name:        pulumi.String("wedding-guests"),
+func createDynamodbTable(ctx *pulumi.Context, dynamoDbTableName string) (*dynamodb.Table, error) {
+	return dynamodb.NewTable(ctx, dynamoDbTableName, &dynamodb.TableArgs{
+		Name:        pulumi.String(dynamoDbTableName),
 		BillingMode: pulumi.String("PAY_PER_REQUEST"),
 		Attributes: dynamodb.TableAttributeArray{
-			&dynamodb.TableAttributeArgs{
-				Name: pulumi.String("guestId"),
-				Type: pulumi.String("S"),
-			},
 			&dynamodb.TableAttributeArgs{
 				Name: pulumi.String("guestName"),
 				Type: pulumi.String("S"),
 			},
 		},
-		HashKey:  pulumi.String("guestId"),
+		HashKey:  pulumi.String("guestName"),
 		RangeKey: pulumi.String("guestName"),
 	})
 }
