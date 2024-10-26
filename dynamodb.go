@@ -15,7 +15,6 @@ func createDynamodbTable(ctx *pulumi.Context, dynamoDbTableName string) (*dynamo
 				Type: pulumi.String("S"),
 			},
 		},
-		HashKey:  pulumi.String("guestName"),
-		RangeKey: pulumi.String("guestName"),
+		HashKey: pulumi.String("guestName"),
 	})
 }
