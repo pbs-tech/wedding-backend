@@ -9,6 +9,9 @@ import (
 func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
 	lambdaName := "auth-lambda"
 	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
+	if err != nil {
+		return nil, err
+	}
 	authLambda, err := lambda.NewFunction(ctx, lambdaName, &lambda.FunctionArgs{
 		Runtime: lambda.RuntimeCustomAL2023,
 		Code: pulumi.NewAssetArchive(map[string]interface{}{
@@ -30,7 +33,7 @@ func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Fu
 }
 
 func createRSVPLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
-	lambdaName := "auth-lambda"
+	lambdaName := "rsvp-lambda"
 	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
 	if err != nil {
 		return nil, err
