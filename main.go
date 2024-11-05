@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -19,6 +20,14 @@ func createRSVPResources(ctx *pulumi.Context, guestTableName string) (*lambda.Fu
 		return nil, err
 	}
 	return rsvpLambda, err
+}
+
+func createApiGateway(ctx *pulumi.Context) (*apigatewayv2.Api, error) {
+	apiGway, err := createApiGatewayComponents(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return apiGway, err
 }
 
 func main() {
@@ -45,6 +54,11 @@ func main() {
 		if err != nil {
 			return err
 		}
+		apiGateway, err = createApiGateway(ctx)
+		if err != nil {
+			return err
+		}
+		ctx.Export("api-url", apiGateway.Url)
 		return nil
 	})
 }
