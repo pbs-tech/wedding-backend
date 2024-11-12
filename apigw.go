@@ -47,7 +47,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 	}
 
 	_, err = lambda.NewPermission(ctx, "ApiGatewayPermission", &lambda.PermissionArgs{
-		Action:    pulumi.String("lambdaInvokeFunction"),
+		Action:    pulumi.String("lambda:InvokeFunction"),
 		Function:  rsvpLambda.Name,
 		Principal: pulumi.String("apigateway.amazonaws.com"),
 		SourceArn: pulumi.Sprintf("%s/*/*", apiGateway.ExecutionArn),
