@@ -22,12 +22,12 @@ func createRSVPResources(ctx *pulumi.Context, guestTableName string) (*lambda.Fu
 	return rsvpLambda, err
 }
 
-func createApiGateway(ctx *pulumi.Context) (*apigatewayv2.Api, error) {
-	apiGway, err := createApiGatewayComponents(ctx)
+func createApiGateway(ctx *pulumi.Context, rsvpLambda *lambda.Function) (*apigatewayv2.Api, error) {
+	apiGateway, err := createApiGatewayComponents(ctx, rsvpLambda)
 	if err != nil {
 		return nil, err
 	}
-	return apiGway, err
+	return apiGateway, err
 }
 
 func main() {
@@ -50,15 +50,15 @@ func main() {
 		if err != nil {
 			return err
 		}
-		_, err = createRSVPResources(ctx, guestTableName)
+		rsvpLambda, err := createRSVPResources(ctx, guestTableName)
 		if err != nil {
 			return err
 		}
-		apiGateway, err = createApiGateway(ctx)
+		apiGateway, err := createApiGateway(ctx, rsvpLambda)
 		if err != nil {
 			return err
 		}
-		ctx.Export("api-url", apiGateway.Url)
+		ctx.Export("api-url", apiGateway.ApiEndpoint)
 		return nil
 	})
 }

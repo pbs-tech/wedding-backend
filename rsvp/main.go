@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -83,15 +84,22 @@ func (guest Guest) GetKey() map[string]types.AttributeValue {
 	return map[string]types.AttributeValue{"guestName": guestName}
 }
 
-func handleRequest(ctx context.Context) error {
-	guest, err := getGuestDetails(ctx, guestName)
-	if err != nil {
-		return err
-	}
-	_, err = updateGuestRsvpResponse(ctx, guest)
-	if err != nil {
-		return err
-	}
+func handleRequest(ctx context.Context, req events.APIGatewayV2HTTPRequest) (*events.APIGatewayV2HTTPResponse, error) {
+	// guest, err := getGuestDetails(ctx, guestName)
+	// if err != nil {
+	// 	return err
+	// }
+	// _, err = updateGuestRsvpResponse(ctx, guest)
+	// if err != nil {
+	// 	return err
+	// }
+	return &events.APIGatewayV2HTTPResponse{
+		StatusCode: 200,
+		Body:       "Hello from Lambda!",
+		Headers: map[string]string{
+			"Content-Type": "text/plain",
+		},
+	}, nil
 }
 
 func main() {
