@@ -40,7 +40,7 @@ jobs:
         run: make
 
       - name: Applying infrastructure 🚀
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@v6
         with:
           command: up
           stack-name: dev

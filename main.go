@@ -8,6 +8,9 @@ import (
 
 func createAuthResources(ctx *pulumi.Context, guestTableName string) (*lambda.Function, error) {
 	authPassword, err := createSSMParameter(ctx)
+	if err != nil {
+		return nil, err
+	}
 	authLambda, err := createAuthLambda(ctx, authPassword)
 	if err != nil {
 		return nil, err
