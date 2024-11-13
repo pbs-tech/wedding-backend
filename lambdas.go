@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
+func createAuthLambda(ctx *pulumi.Context, authPassword *ssm.Parameter) (*lambda.Function, error) {
 	lambdaName := "auth-lambda"
 	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
 	if err != nil {
@@ -22,7 +23,7 @@ func createAuthLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Fu
 		Architectures: pulumi.StringArray{pulumi.String("arm64")},
 		Environment: &lambda.FunctionEnvironmentArgs{
 			Variables: pulumi.StringMap{
-				"DYNAMODB_TABLE_NAME": pulumi.String(dynamoDbTableName),
+				"AUTH_PASSWORD_PARAM": authPassword.Name,
 			},
 		},
 	}, pulumi.DependsOn([]pulumi.Resource{logPolicy}))

@@ -73,7 +73,7 @@ func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewa
 	}
 
 	// Create DNS record
-	_, err = route53.NewRecord(ctx, "api",
+	_, err = route53.NewRecord(ctx, "api-route53-record",
 		&route53.RecordArgs{
 			ZoneId: pulumi.String(zoneId),
 			Type:   pulumi.String("A"),

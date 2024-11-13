@@ -8,7 +8,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function) (*apigatewayv2.Api, error) {
+func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function, authLambda *lambda.Function) (*apigatewayv2.Api, error) {
 	apiGateway, err := apigatewayv2.NewApi(ctx, "wedding-api", &apigatewayv2.ApiArgs{
 		Name:         pulumi.String("wedding-api"),
 		ProtocolType: pulumi.String("HTTP"),
