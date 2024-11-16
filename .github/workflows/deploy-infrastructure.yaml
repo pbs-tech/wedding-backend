@@ -5,7 +5,7 @@ on:
       - main
   workflow_dispatch:
 
-env: 
+env:
   AWS_REGION: eu-west-2
 
 permissions:
