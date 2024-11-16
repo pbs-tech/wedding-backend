@@ -82,6 +82,7 @@ func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewa
 				route53.RecordAliasArgs{
 					Name:                 apiDomainName.DomainName,
 					EvaluateTargetHealth: pulumi.Bool(false),
+					ZoneId:               pulumi.String(zoneId),
 				},
 			},
 		})

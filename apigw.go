@@ -8,7 +8,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function, authLambda *lambda.Function) (*apigatewayv2.Api, error) {
+func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function) (*apigatewayv2.Api, error) {
 	apiGateway, err := apigatewayv2.NewApi(ctx, "wedding-api", &apigatewayv2.ApiArgs{
 		Name:         pulumi.String("wedding-api"),
 		ProtocolType: pulumi.String("HTTP"),
@@ -26,10 +26,10 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 	if err != nil {
 		return nil, err
 	}
-	rsvpLambdaIntegration, err := apigatewayv2.NewIntegration(ctx, "rsvpLambdaIntegration", &apigatewayv2.IntegrationArgs{
+	authLambdaIntegration, err := apigatewayv2.NewIntegration(ctx, "rsvpLambdaIntegration", &apigatewayv2.IntegrationArgs{
 		ApiId:                apiGateway.ID(),
 		IntegrationType:      pulumi.String("AWS_PROXY"),
-		IntegrationUri:       rsvpLambda.Arn, // lambda arn,
+		IntegrationUri:       authLambda.Arn, // lambda arn,
 		IntegrationMethod:    pulumi.String("POST"),
 		PayloadFormatVersion: pulumi.String("2.0"),
 	})
@@ -40,7 +40,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 	_, err = apigatewayv2.NewRoute(ctx, "defaultRoute", &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
 		RouteKey: pulumi.String("ANY /{proxy+}"),
-		Target:   pulumi.Sprintf("integrations/%s", rsvpLambdaIntegration.ID()),
+		Target:   pulumi.Sprintf("integrations/%s", authLambdaIntegration.ID()),
 	})
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 
 	_, err = lambda.NewPermission(ctx, "ApiGatewayPermission", &lambda.PermissionArgs{
 		Action:    pulumi.String("lambda:InvokeFunction"),
-		Function:  rsvpLambda.Name,
+		Function:  authLambdaIntegration,
 		Principal: pulumi.String("apigateway.amazonaws.com"),
 		SourceArn: pulumi.Sprintf("%s/*/*", apiGateway.ExecutionArn),
 	})
@@ -58,7 +58,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 
 	deployment, err := apigatewayv2.NewDeployment(ctx, "deployment", &apigatewayv2.DeploymentArgs{
 		ApiId: apiGateway.ID(),
-	}, pulumi.DependsOn([]pulumi.Resource{rsvpLambdaIntegration, apiGateway}))
+	}, pulumi.DependsOn([]pulumi.Resource{authLambdaIntegration, apiGateway}))
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 		if err != nil {
 			return nil, err
 		}
-		customUrl := pulumi.Printf("https://%s/", apiMapping.DomainName)
+		customUrl := pulumi.Output(apiMapping.DomainName)
 		ctx.Export("custom-url", customUrl)
 
 	}

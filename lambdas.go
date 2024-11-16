@@ -33,32 +33,6 @@ func createAuthLambda(ctx *pulumi.Context, authPassword *ssm.Parameter) (*lambda
 	return authLambda, nil
 }
 
-func createRSVPLambda(ctx *pulumi.Context, dynamoDbTableName string) (*lambda.Function, error) {
-	lambdaName := "rsvp-lambda"
-	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
-	if err != nil {
-		return nil, err
-	}
-	rsvpLambda, err := lambda.NewFunction(ctx, lambdaName, &lambda.FunctionArgs{
-		Runtime: lambda.RuntimeCustomAL2023,
-		Code: pulumi.NewAssetArchive(map[string]interface{}{
-			".": pulumi.NewFileArchive("./bin/rsvp.zip"),
-		}),
-		Handler:       pulumi.String("rsvp"),
-		Role:          role.Arn,
-		Architectures: pulumi.StringArray{pulumi.String("arm64")},
-		Environment: &lambda.FunctionEnvironmentArgs{
-			Variables: pulumi.StringMap{
-				"DYNAMODB_TABLE_NAME": pulumi.String(dynamoDbTableName),
-			},
-		},
-	}, pulumi.DependsOn([]pulumi.Resource{logPolicy}))
-	if err != nil {
-		return nil, err
-	}
-	return rsvpLambda, nil
-}
-
 func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string) (*iam.Role, *iam.RolePolicy, error) {
 	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
 		AssumeRolePolicy: pulumi.String(`{

@@ -6,7 +6,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAuthResources(ctx *pulumi.Context, guestTableName string) (*lambda.Function, error) {
+func createAuthResources(ctx *pulumi.Context) (*lambda.Function, error) {
 	authPassword, err := createSSMParameter(ctx)
 	if err != nil {
 		return nil, err
@@ -18,16 +18,8 @@ func createAuthResources(ctx *pulumi.Context, guestTableName string) (*lambda.Fu
 	return authLambda, err
 }
 
-func createRSVPResources(ctx *pulumi.Context, guestTableName string) (*lambda.Function, error) {
-	rsvpLambda, err := createRSVPLambda(ctx, guestTableName)
-	if err != nil {
-		return nil, err
-	}
-	return rsvpLambda, err
-}
-
-func createApiGateway(ctx *pulumi.Context, rsvpLambda *lambda.Function, authLambda *lambda.Function) (*apigatewayv2.Api, error) {
-	apiGateway, err := createApiGatewayComponents(ctx, rsvpLambda, authLambda)
+func createApiGateway(ctx *pulumi.Context, authLambda *lambda.Function) (*apigatewayv2.Api, error) {
+	apiGateway, err := createApiGatewayComponents(ctx, authLambda)
 	if err != nil {
 		return nil, err
 	}
@@ -50,15 +42,11 @@ func main() {
 		if err != nil {
 			return err
 		}
-		authLambda, err := createAuthResources(ctx, guestTableName)
+		authLambda, err := createAuthResources(ctx)
 		if err != nil {
 			return err
 		}
-		rsvpLambda, err := createRSVPResources(ctx, guestTableName)
-		if err != nil {
-			return err
-		}
-		apiGateway, err := createApiGateway(ctx, rsvpLambda, authLambda)
+		apiGateway, err := createApiGateway(ctx, authLambda)
 		if err != nil {
 			return err
 		}
