@@ -77,7 +77,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, rsvpLambda *lambda.Function
 	if domain != "" {
 		// Load DNS zone
 		dnsZone := conf.Require("dns-zone")
-		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: &dnsZone})
+		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
 		if err != nil {
 			return nil, err
 		}
