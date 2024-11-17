@@ -14,9 +14,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		ProtocolType: pulumi.String("HTTP"),
 		CorsConfiguration: &apigatewayv2.ApiCorsConfigurationArgs{
 			AllowMethods: pulumi.StringArray{
-				pulumi.String("GET"),
 				pulumi.String("POST"),
-				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
 				pulumi.String("*"),
@@ -26,7 +24,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 	if err != nil {
 		return nil, err
 	}
-	authLambdaIntegration, err := apigatewayv2.NewIntegration(ctx, "rsvpLambdaIntegration", &apigatewayv2.IntegrationArgs{
+	authLambdaIntegration, err := apigatewayv2.NewIntegration(ctx, "auth-lambda-integration", &apigatewayv2.IntegrationArgs{
 		ApiId:                apiGateway.ID(),
 		IntegrationType:      pulumi.String("AWS_PROXY"),
 		IntegrationUri:       authLambda.Arn, // lambda arn,
@@ -37,18 +35,18 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		return nil, err
 	}
 
-	_, err = apigatewayv2.NewRoute(ctx, "defaultRoute", &apigatewayv2.RouteArgs{
+	_, err = apigatewayv2.NewRoute(ctx, "default-route", &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
-		RouteKey: pulumi.String("ANY /{proxy+}"),
+		RouteKey: pulumi.String("POST /auth"),
 		Target:   pulumi.Sprintf("integrations/%s", authLambdaIntegration.ID()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = lambda.NewPermission(ctx, "ApiGatewayPermission", &lambda.PermissionArgs{
+	_, err = lambda.NewPermission(ctx, "api-gateway-permission", &lambda.PermissionArgs{
 		Action:    pulumi.String("lambda:InvokeFunction"),
-		Function:  authLambdaIntegration,
+		Function:  authLambda.Name,
 		Principal: pulumi.String("apigateway.amazonaws.com"),
 		SourceArn: pulumi.Sprintf("%s/*/*", apiGateway.ExecutionArn),
 	})
@@ -73,15 +71,15 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		return nil, err
 	}
 	conf := config.New(ctx, "")
-	domain := conf.Get("domain")
-	if domain != "" {
+	apiSubdomain := conf.Get("api-subdomain")
+	if apiSubdomain != "" {
 		// Load DNS zone
 		dnsZone := conf.Require("dns-zone")
 		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
 		if err != nil {
 			return nil, err
 		}
-		apiDomainName, err := configureDns(ctx, domain, zone.ZoneId)
+		apiDomainName, err := configureDns(ctx, apiSubdomain, zone.ZoneId)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +94,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		if err != nil {
 			return nil, err
 		}
-		customUrl := pulumi.Output(apiMapping.DomainName)
+		customUrl := pulumi.Sprintf("https://%s/", apiMapping.DomainName)
 		ctx.Export("custom-url", customUrl)
 
 	}

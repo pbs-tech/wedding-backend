@@ -7,11 +7,11 @@ import (
 )
 
 func createAuthResources(ctx *pulumi.Context) (*lambda.Function, error) {
-	authPassword, err := createSSMParameter(ctx)
+	authPasswordParam, err := createSSMParameter(ctx)
 	if err != nil {
 		return nil, err
 	}
-	authLambda, err := createAuthLambda(ctx, authPassword)
+	authLambda, err := createAuthLambda(ctx, authPasswordParam)
 	if err != nil {
 		return nil, err
 	}
@@ -36,12 +36,6 @@ func main() {
 		// if err != nil {
 		// 	return err
 		// }
-
-		guestTableName := "wedding-guests"
-		_, err := createDynamodbTable(ctx, guestTableName)
-		if err != nil {
-			return err
-		}
 		authLambda, err := createAuthResources(ctx)
 		if err != nil {
 			return err

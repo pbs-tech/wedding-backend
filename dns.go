@@ -7,12 +7,34 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewayv2.DomainName, error) {
+func configureDns(ctx *pulumi.Context, apiSubdomain string, zoneId string) (*apigatewayv2.DomainName, error) {
+
+	// Create api subdomain
+	apiZone, err := route53.NewZone(ctx, "api-route53-zone", &route53.ZoneArgs{
+		Name: pulumi.String(apiSubdomain),
+	})
+	if err != nil {
+		return nil, err
+	}
+	apiSubdomainZoneId := apiZone.ZoneId
+
+	// Create DNS record
+	_, err = route53.NewRecord(ctx, "api-route53-ns-record",
+		&route53.RecordArgs{
+			ZoneId:  pulumi.String(zoneId),
+			Type:    pulumi.String(route53.RecordTypeNS),
+			Name:    pulumi.String(apiSubdomain),
+			Ttl:     pulumi.Int(172800),
+			Records: apiZone.NameServers,
+		})
+	if err != nil {
+		return nil, err
+	}
 	// Request ACM cert
 	sslCert, err := acm.NewCertificate(ctx,
 		"ssl-cert",
 		&acm.CertificateArgs{
-			DomainName:       pulumi.String(domain),
+			DomainName:       pulumi.String(apiSubdomain),
 			ValidationMethod: pulumi.String("DNS"),
 		},
 	)
@@ -26,7 +48,7 @@ func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewa
 	sslCertValidationDnsRecord, err := route53.NewRecord(ctx,
 		"ssl-cert-validation-dns-record",
 		&route53.RecordArgs{
-			ZoneId: pulumi.String(zoneId),
+			ZoneId: apiSubdomainZoneId,
 			Name: domainValidationOption.ApplyT(func(option interface{}) string {
 				return *option.(acm.CertificateDomainValidationOption).ResourceRecordName
 			}).(pulumi.StringOutput),
@@ -60,7 +82,7 @@ func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewa
 	// configure apigw v2 with domain name and cert
 	apiDomainName, err := apigatewayv2.NewDomainName(ctx, "api-domain-name",
 		&apigatewayv2.DomainNameArgs{
-			DomainName: pulumi.String(domain),
+			DomainName: pulumi.String(apiSubdomain),
 			DomainNameConfiguration: &apigatewayv2.DomainNameDomainNameConfigurationArgs{
 				CertificateArn: validatedSslCert.CertificateArn,
 				EndpointType:   pulumi.String("REGIONAL"),
@@ -73,16 +95,16 @@ func configureDns(ctx *pulumi.Context, domain string, zoneId string) (*apigatewa
 	}
 
 	// Create DNS record
-	_, err = route53.NewRecord(ctx, "api-route53-record",
+	_, err = route53.NewRecord(ctx, "api-route53-a-record",
 		&route53.RecordArgs{
-			ZoneId: pulumi.String(zoneId),
+			ZoneId: apiSubdomainZoneId,
 			Type:   pulumi.String("A"),
-			Name:   pulumi.String(domain),
+			Name:   apiDomainName.DomainName,
 			Aliases: route53.RecordAliasArray{
 				route53.RecordAliasArgs{
 					Name:                 apiDomainName.DomainName,
 					EvaluateTargetHealth: pulumi.Bool(false),
-					ZoneId:               pulumi.String(zoneId),
+					ZoneId:               apiDomainName.DomainNameConfiguration.HostedZoneId().Elem(),
 				},
 			},
 		})

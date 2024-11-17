@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
+
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAuthLambda(ctx *pulumi.Context, authPassword *ssm.Parameter) (*lambda.Function, error) {
+func createAuthLambda(ctx *pulumi.Context, authPasswordParam *ssm.Parameter) (*lambda.Function, error) {
 	lambdaName := "auth-lambda"
-	role, logPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName)
+	authPasswordParamArn := pulumi.StringOutput(authPasswordParam.Arn)
+	role, lambdaPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName, authPasswordParamArn)
 	if err != nil {
 		return nil, err
 	}
@@ -23,51 +26,72 @@ func createAuthLambda(ctx *pulumi.Context, authPassword *ssm.Parameter) (*lambda
 		Architectures: pulumi.StringArray{pulumi.String("arm64")},
 		Environment: &lambda.FunctionEnvironmentArgs{
 			Variables: pulumi.StringMap{
-				"AUTH_PASSWORD_PARAM": authPassword.Name,
+				"AUTH_PASSWORD_PARAM": authPasswordParam.Name,
 			},
 		},
-	}, pulumi.DependsOn([]pulumi.Resource{logPolicy}))
+	}, pulumi.DependsOn([]pulumi.Resource{lambdaPolicy}))
 	if err != nil {
 		return nil, err
 	}
 	return authLambda, nil
 }
 
-func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string) (*iam.Role, *iam.RolePolicy, error) {
-	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
-		AssumeRolePolicy: pulumi.String(`{
-			"Version": "2012-10-17",
-			"Statement": [{
-					"Sid": "",
-					"Effect": "Allow",
-					"Principal": {
-						"Service": "lambda.amazonaws.com"
-					},
-					"Action": "sts:AssumeRole"
-			}]
-			}`),
+func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPasswordParamArn pulumi.StringOutput) (*iam.Role, *iam.RolePolicy, error) {
+	assumeRolePolicyJSON, err := json.Marshal(map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": map[string]interface{}{
+			"Sid":    "",
+			"Effect": "Allow",
+			"Action": "sts:AssumeRole",
+			"Principal": map[string]interface{}{
+				"Service": "lambda.amazonaws.com",
+			},
+		},
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	logPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-log-policy", &iam.RolePolicyArgs{
-		Role: role.Name,
-		Policy: pulumi.String(`{
-			"Version": "2012-10-17",
-			"Statement": [{
-				"Sid": "",
+	assumeRolePolicyStr := string(assumeRolePolicyJSON)
+	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
+		AssumeRolePolicy: pulumi.String(assumeRolePolicyStr),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	lambdaPolicyJSON, err := json.Marshal(map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{
+			{
+				"Sid":    "LambdaLogging",
 				"Effect": "Allow",
-				"Action": [
+				"Action": []string{
 					"logs:CreateLogGroup",
 					"logs:CreateLogStream",
-					"logs:PutLogEvents"
-				],
-				"Resource": "arn:aws:logs:*:*:*"
-			}]
-		}`),
+					"logs:PutLogEvents",
+				},
+				"Resource": "arn:aws:logs:*:*:*",
+			},
+			{
+				"Sid":    "LambdaLogging",
+				"Effect": "Allow",
+				"Action": []string{
+					"ssm:GetParameters",
+					"kms:Decrypt",
+				},
+				"Resource": authPasswordParamArn,
+			},
+		},
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	return role, logPolicy, err
+	lambdaPolicyStr := string(lambdaPolicyJSON)
+	lambdaPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-lambda-policy", &iam.RolePolicyArgs{
+		Role:   role.Name,
+		Policy: pulumi.String(lambdaPolicyStr),
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return role, lambdaPolicy, err
 }

@@ -3,4 +3,4 @@ config:
   wedding-backend:dns-zone: peebles.lol.
   wedding-backend:domain: api.peebles.lol
   wedding-backend:authPassword:
-    secure: AAABAEMJaf9/yRoQqL242Fj2Mw0cv8lzxgjYjePfr+mS7OSdY13mll192w==
+    secure: AAABAIIH/6RHfOOxHOhAf7SjR9K1MF+I5qrs9p1N4KIxdhQN59xXPLJP3g==
