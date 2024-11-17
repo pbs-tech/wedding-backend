@@ -11,8 +11,7 @@ import (
 
 func createAuthLambda(ctx *pulumi.Context, authPasswordParam *ssm.Parameter) (*lambda.Function, error) {
 	lambdaName := "auth-lambda"
-	authPasswordParamArn := pulumi.StringOutput(authPasswordParam.Arn)
-	role, lambdaPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName, authPasswordParamArn)
+	role, lambdaPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName, authPasswordParam.Arn)
 	if err != nil {
 		return nil, err
 	}
@@ -51,44 +50,40 @@ func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPassw
 	if err != nil {
 		return nil, nil, err
 	}
-	assumeRolePolicyStr := string(assumeRolePolicyJSON)
+	assumeRolePolicy := string(assumeRolePolicyJSON)
 	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
-		AssumeRolePolicy: pulumi.String(assumeRolePolicyStr),
+		AssumeRolePolicy: pulumi.String(assumeRolePolicy),
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	lambdaPolicyJSON, err := json.Marshal(map[string]interface{}{
-		"Version": "2012-10-17",
-		"Statement": []map[string]interface{}{
+
+	lambdaPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-lambda-policy", &iam.RolePolicyArgs{
+		Role: role.Name,
+		Policy: pulumi.Sprintf(`{
+			"Version": "2012-10-17",
+			"Statement": [
 			{
-				"Sid":    "LambdaLogging",
+				"Sid": "LambdaLogging",
 				"Effect": "Allow",
-				"Action": []string{
+				"Action": [
 					"logs:CreateLogGroup",
 					"logs:CreateLogStream",
-					"logs:PutLogEvents",
-				},
-				"Resource": "arn:aws:logs:*:*:*",
+					"logs:PutLogEvents"
+				],
+				"Resource": "arn:aws:logs:*:*:*"
 			},
 			{
-				"Sid":    "LambdaLogging",
+				"Sid": "GetSSMParam",
 				"Effect": "Allow",
-				"Action": []string{
+				"Action": [
 					"ssm:GetParameters",
-					"kms:Decrypt",
-				},
-				"Resource": authPasswordParamArn,
+					"kms:Decrypt"
+				],
+				"Resource": %s
 			},
-		},
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	lambdaPolicyStr := string(lambdaPolicyJSON)
-	lambdaPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-lambda-policy", &iam.RolePolicyArgs{
-		Role:   role.Name,
-		Policy: pulumi.String(lambdaPolicyStr),
+			]
+		}`, authPasswordParamArn),
 	})
 	if err != nil {
 		return nil, nil, err

@@ -28,14 +28,6 @@ func createApiGateway(ctx *pulumi.Context, authLambda *lambda.Function) (*apigat
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// _, err := aws.GetCallerIdentity(ctx)
-		// if err != nil {
-		// 	return err
-		// }
-		// _, err := aws.GetRegion(ctx, &aws.GetRegionArgs{})
-		// if err != nil {
-		// 	return err
-		// }
 		authLambda, err := createAuthResources(ctx)
 		if err != nil {
 			return err
