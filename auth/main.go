@@ -1,9 +1,10 @@
-package auth
+package main
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
@@ -39,18 +40,14 @@ func (ps *ParameterStore) Auth(name string, withDecryption bool) string {
 	return *results.Parameter.Value
 }
 
-// func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-// 	// authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
-// 	// paramStore := NewParameterStoreClient()
-// 	// authPassword := paramStore.Auth(authPasswordParam, true)
-// 	return events.APIGatewayV2HTTPResponse{
-// 		StatusCode: 200,
-// 		Body:       "hello world!!",
-// 	}, nil
-// }
-
-func handleRequest() (string, error) {
-	return "Hello there my fried friend", nil
+func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	// authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
+	// paramStore := NewParameterStoreClient()
+	// authPassword := paramStore.Auth(authPasswordParam, true)
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: 200,
+		Body:       "hello world!!",
+	}, nil
 }
 
 func main() {
