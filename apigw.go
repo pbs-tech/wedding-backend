@@ -65,7 +65,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		ApiId:        apiGateway.ID(),
 		DeploymentId: deployment.ID(),
 		Name:         pulumi.String("v1"),
-		AutoDeploy:   pulumi.Bool(true),
+		AutoDeploy:   pulumi.Bool(false),
 	})
 	if err != nil {
 		return nil, err
