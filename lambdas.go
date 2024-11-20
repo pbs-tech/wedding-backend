@@ -8,7 +8,7 @@ import (
 )
 
 func createAuthLambda(ctx *pulumi.Context, authPasswordParam *ssm.Parameter) (*lambda.Function, error) {
-	lambdaName := "auth-lambda"
+	lambdaName := "auth"
 	role, lambdaPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName, authPasswordParam.Arn)
 	if err != nil {
 		return nil, err
@@ -33,29 +33,30 @@ func createAuthLambda(ctx *pulumi.Context, authPasswordParam *ssm.Parameter) (*l
 	return authLambda, nil
 }
 
-func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPasswordParamArn pulumi.StringOutput) (*iam.Role, *iam.RolePolicy, error) {
+func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPasswordParamArn pulumi.StringOutput) (*iam.Role, *iam.Policy, error) {
+	assumeRolePolicyStatement := pulumi.String(`{
+		"Version": "2012-10-17",
+		"Statement": [
+			{
+				"Effect": "Allow",
+				"Action": "sts:AssumeRole",
+				"Principal": {
+					"Service": "lambda.amazonaws.com"
+				}
+			}
+		]
+	}`)
+
 	role, err := iam.NewRole(ctx, lambdaName+"-exec-role", &iam.RoleArgs{
-		AssumeRolePolicy: pulumi.String(`{
-			"Version": "2012-10-17",
-			"Statement": [{
-					"Sid": "",
-					"Effect": "Allow",
-					"Principal": {
-						"Service": "lambda.amazonaws.com"
-					},
-					"Action": "sts:AssumeRole"
-			}]
-		}`),
+		AssumeRolePolicy: assumeRolePolicyStatement,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	lambdaPolicy, err := iam.NewRolePolicy(ctx, lambdaName+"-lambda-policy", &iam.RolePolicyArgs{
-		Role: role.Name,
-		Policy: pulumi.Sprintf(`{
-			"Version": "2012-10-17",
-			"Statement": [
+	lambdaPolicyStatement := pulumi.Sprintf(`{
+		"Version": "2012-10-17",
+		"Statement": [
 			{
 				"Sid": "LambdaLogging",
 				"Effect": "Allow",
@@ -64,20 +65,34 @@ func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPassw
 					"logs:CreateLogStream",
 					"logs:PutLogEvents"
 				],
-				"Resource": "arn:aws:logs:*:*:*"
+				"Resource": [
+					"arn:aws:logs:*:*:*"
+				]
 			},
 			{
-				"Sid": "GetSSMParam",
+				"Sid": "ssmParameterAccess",
 				"Effect": "Allow",
 				"Action": [
 					"ssm:GetParameters",
 					"kms:Decrypt"
 				],
-				"Resource": "%s"
-			},
-			]
-		}`, authPasswordParamArn),
+				"Resource": [
+					"%s"
+				]
+			}
+		]
+	}`, authPasswordParamArn)
+	lambdaPolicy, err := iam.NewPolicy(ctx, lambdaName+"-lambda-policy", &iam.PolicyArgs{
+		Policy: lambdaPolicyStatement,
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+	_, err = iam.NewRolePolicyAttachment(ctx, lambdaName+"-policy-attachment", &iam.RolePolicyAttachmentArgs{
+		Role:      role.Name,
+		PolicyArn: lambdaPolicy.Arn,
+	})
+
 	if err != nil {
 		return nil, nil, err
 	}
