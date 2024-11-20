@@ -8,7 +8,7 @@ import (
 )
 
 func createAuthLambda(ctx *pulumi.Context, authPasswordParam *ssm.Parameter) (*lambda.Function, error) {
-	lambdaName := "auth"
+	lambdaName := "auth-lambda"
 	role, lambdaPolicy, err := createLambdaIamRolePolicy(ctx, lambdaName, authPasswordParam.Arn)
 	if err != nil {
 		return nil, err
@@ -76,8 +76,7 @@ func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPassw
 				"Resource": %s
 			},
 			]
-		}`, pulumi.StringOutput(authPasswordParamArn),
-		),
+		}`, authPasswordParamArn),
 	})
 	if err != nil {
 		return nil, nil, err
