@@ -73,7 +73,7 @@ func createLambdaIamRolePolicy(ctx *pulumi.Context, lambdaName string, authPassw
 				"Sid": "ssmParameterAccess",
 				"Effect": "Allow",
 				"Action": [
-					"ssm:GetParameters",
+					"ssm:GetParameter",
 					"kms:Decrypt"
 				],
 				"Resource": [
