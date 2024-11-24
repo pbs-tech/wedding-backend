@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/amplify"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
@@ -28,8 +30,8 @@ func createApiGateway(ctx *pulumi.Context, authLambda *lambda.Function) (*apigat
 	return apiGateway, err
 }
 
-func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string) (*amplify.App, error) {
-	app, err := createAmplifyApp(ctx)
+func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string) (*amplify.App, error) {
+	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +52,14 @@ func main() {
 		if err != nil {
 			return err
 		}
-
-		frontEnd, err := createAmplifyResources(ctx, frontendDomain)
+		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
-
+			return err
+		}
+		frontendBuildSpecStr := string(frontendBuildSpec)
+		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr)
+		if err != nil {
+			return err
 		}
 		ctx.Export("api-url", apiGateway.ApiEndpoint)
 		ctx.Export("frontend-url", frontEnd.DefaultDomain)

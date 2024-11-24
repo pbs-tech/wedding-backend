@@ -5,25 +5,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAmplifyApp(ctx *pulumi.Context) (*amplify.App, error) {
+func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string) (*amplify.App, error) {
 	frontEnd, err := amplify.NewApp(ctx, "wedding-frontend", &amplify.AppArgs{
-		BuildSpec: pulumi.String(`version: 1
-frontend:
-phases:
-preBuild:
-commands:
-- npm ci --cache .npm --prefer-offline
-build:
-commands:
-- npm run build
-artifacts:
-baseDirectory: dist
-files:
-- '**/*'
-cache:
-paths:
-- .npm/**/*
-`),
+		BuildSpec: pulumi.String(buildSpecStr),
 		CacheConfig: &amplify.AppCacheConfigArgs{
 			Type: pulumi.String("AMPLIFY_MANAGED"),
 		},
