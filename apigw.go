@@ -54,7 +54,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 		return nil, err
 	}
 
-	deployment, err := apigatewayv2.NewDeployment(ctx, "deployment", &apigatewayv2.DeploymentArgs{
+	_, err = apigatewayv2.NewDeployment(ctx, "deployment", &apigatewayv2.DeploymentArgs{
 		ApiId: apiGateway.ID(),
 	}, pulumi.DependsOn([]pulumi.Resource{authLambdaIntegration, apiGateway}))
 	if err != nil {
@@ -62,10 +62,9 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 	}
 
 	apiStage, err := apigatewayv2.NewStage(ctx, "api-stage", &apigatewayv2.StageArgs{
-		ApiId:        apiGateway.ID(),
-		DeploymentId: deployment.ID(),
-		Name:         pulumi.String("v1"),
-		AutoDeploy:   pulumi.Bool(true),
+		ApiId:      apiGateway.ID(),
+		Name:       pulumi.String("v1"),
+		AutoDeploy: pulumi.Bool(true),
 	})
 	if err != nil {
 		return nil, err
