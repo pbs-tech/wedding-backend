@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -13,6 +16,10 @@ import (
 
 type ParameterStore struct {
 	client *ssm.Client
+}
+
+type RequestBody struct {
+	UserPassword string `json:"userPassword"`
 }
 
 func NewParameterStoreClient() *ParameterStore {
@@ -45,10 +52,29 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
 	paramStore := NewParameterStoreClient()
 	authPassword := paramStore.Auth(authPasswordParam, true)
-	return events.APIGatewayV2HTTPResponse{
-		StatusCode: 200,
-		Body:       authPassword,
-	}, nil
+	var body RequestBody
+	err := json.Unmarshal([]byte(apiGatewayRequest.Body), &body)
+	if err != nil {
+		log.Printf("Failed to parse request body: %v", &apiGatewayRequest.Body)
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusBadRequest,
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+			},
+			Body: "Invalid request body",
+		}, nil
+	}
+	if body.UserPassword == authPassword {
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusAccepted,
+			Body:       "Authorised",
+		}, nil
+	} else {
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusUnauthorized,
+			Body:       "Unauthorised",
+		}, nil
+	}
 }
 
 func main() {

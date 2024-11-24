@@ -1,6 +1,7 @@
 config:
   aws:region: eu-west-2
   wedding-backend:dns-zone: peebles.lol.
-  wedding-backend:domain: api.peebles.lol
+  wedding-backend:frontend-domain: peebles.lol
+  wedding-backend:api-domain: api.peebles.lol
   wedding-backend:authPassword:
     secure: AAABAIIH/6RHfOOxHOhAf7SjR9K1MF+I5qrs9p1N4KIxdhQN59xXPLJP3g==
