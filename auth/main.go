@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bcrypt"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type ParameterStore struct {
@@ -64,7 +66,7 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			Body: "Invalid request body",
 		}, nil
 	}
-	if body.UserPassword == authPassword {
+	if bcrypt.CompareHashAndPassword(body.UserPassword, authPassword) {
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusAccepted,
 			Body:       "Authorised",
