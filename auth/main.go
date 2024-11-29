@@ -65,7 +65,7 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			Body: "Invalid request body",
 		}, nil
 	}
-	if bcrypt.CompareHashAndPassword(body.UserPassword, authPassword) {
+	if bcrypt.CompareHashAndPassword([]byte(body.UserPassword), []byte(authPassword)) == nil {
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusAccepted,
 			Body:       "Authorised",
