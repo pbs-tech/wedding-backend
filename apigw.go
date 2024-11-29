@@ -19,6 +19,10 @@ func createApiGatewayComponents(ctx *pulumi.Context, authLambda *lambda.Function
 			AllowOrigins: pulumi.StringArray{
 				pulumi.String("*"),
 			},
+			AllowHeaders: pulumi.StringArray{
+				pulumi.String("Content-Type"),
+				pulumi.String("Origin"),
+			},
 		},
 	})
 	if err != nil {
