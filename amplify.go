@@ -5,11 +5,14 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string) (*amplify.App, error) {
+func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string, apiGatewayEndpoint pulumi.StringOutput) (*amplify.App, error) {
 	frontEnd, err := amplify.NewApp(ctx, "wedding-frontend", &amplify.AppArgs{
 		BuildSpec: pulumi.String(buildSpecStr),
 		CacheConfig: &amplify.AppCacheConfigArgs{
 			Type: pulumi.String("AMPLIFY_MANAGED"),
+		},
+		EnvironmentVariables: pulumi.StringMap{
+			"VITE_API_URL": apiGatewayEndpoint,
 		},
 		CustomRules: amplify.AppCustomRuleArray{
 			&amplify.AppCustomRuleArgs{

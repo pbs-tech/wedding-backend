@@ -63,8 +63,8 @@ func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function) (*apigate
 	return apiGateway, err
 }
 
-func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string) (*amplify.App, error) {
-	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr)
+func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput) (*amplify.App, error) {
+	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr, apiEndpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func main() {
 			return err
 		}
 		frontendBuildSpecStr := string(frontendBuildSpec)
-		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr)
+		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr, apiGateway.ApiEndpoint)
 		if err != nil {
 			return err
 		}
