@@ -5,3 +5,5 @@ config:
   wedding-backend:api-domain: api.peebles.lol
   wedding-backend:authPassword:
     secure: AAABAIIH/6RHfOOxHOhAf7SjR9K1MF+I5qrs9p1N4KIxdhQN59xXPLJP3g==
+  wedding-backend:jwtSecret:
+    secure: AAABAI/QLCNfnXRuDNpzTId+pwXCYsNyMeLImZHgZRTYNGdFDVEjgJqJ8UxJtmamSbbZWD30BFk=

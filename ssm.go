@@ -5,12 +5,12 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createSSMParameter(ctx *pulumi.Context, authPassword string) (*ssm.Parameter, error) {
-	parameter, err := ssm.NewParameter(ctx, "auth-password", &ssm.ParameterArgs{
-		Name:        pulumi.String("authPassword"),
-		Description: pulumi.String("Password for users to use to access the site"),
+func createSSMParameter(ctx *pulumi.Context, key string, description string, value string) (*ssm.Parameter, error) {
+	parameter, err := ssm.NewParameter(ctx, key, &ssm.ParameterArgs{
+		Name:        pulumi.String(key),
+		Description: pulumi.String(description),
 		Type:        pulumi.String(ssm.ParameterTypeSecureString),
-		Value:       pulumi.String(authPassword),
+		Value:       pulumi.String(value),
 	})
 	if err != nil {
 		return nil, err

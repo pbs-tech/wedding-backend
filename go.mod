@@ -8,8 +8,10 @@ require (
 	github.com/aws/aws-lambda-go v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.28.5
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.55.6
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.60.0
 	github.com/pulumi/pulumi/sdk/v3 v3.140.0
+	golang.org/x/crypto v0.29.0
 )
 
 require (
@@ -93,7 +95,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zclconf/go-cty v1.15.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect

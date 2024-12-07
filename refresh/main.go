@@ -7,14 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type ParameterStore struct {
@@ -22,7 +21,7 @@ type ParameterStore struct {
 }
 
 type RequestBody struct {
-	UserPassword string `json:"userPassword"`
+	JWTToken string `json:"jwtToken"`
 }
 
 func NewParameterStoreClient() *ParameterStore {
@@ -51,24 +50,22 @@ func (ps *ParameterStore) Get(name string, withDecryption bool) string {
 	return *results.Parameter.Value
 }
 
-func createJWT(secretKey string) string {
-	var secret = []byte(secretKey)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"exp": time.Now().Add(time.Hour * 24 * 365).Unix(),
-		})
-	tokenString, err := token.SignedString(secret)
+func VerifyToken(jwtToken string, jwtSecret string) error {
+	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return tokenString
+	if !token.Valid {
+		return fmt.Errorf(("invalid token"))
+	}
+	return nil
 }
 
 func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
-	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	paramStore := NewParameterStoreClient()
-	authPassword := paramStore.Get(authPasswordParam, true)
 	jwtSecret := paramStore.Get(jwtSigningParam, true)
 
 	var body RequestBody
@@ -83,13 +80,14 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			Body: "Invalid request body",
 		}, nil
 	}
-	if bcrypt.CompareHashAndPassword([]byte(body.UserPassword), []byte(authPassword)) == nil {
+	result := VerifyToken(body.JWTToken, jwtSecret)
+	if result == nil {
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusAccepted,
 			Headers: map[string]string{
 				"Content-Type": "application/json",
 			},
-			Body: createJWT(jwtSecret),
+			Body: "Authorised",
 		}, nil
 	} else {
 		return events.APIGatewayV2HTTPResponse{
