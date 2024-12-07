@@ -19,6 +19,7 @@ func createLambda(ctx *pulumi.Context, lambdaName string, path string, lambdaEnv
 		Handler:       pulumi.String(lambdaName),
 		Role:          role.Arn,
 		Architectures: pulumi.StringArray{pulumi.String("arm64")},
+		Timeout:       pulumi.Int(15),
 		Environment: &lambda.FunctionEnvironmentArgs{
 			Variables: lambdaEnvVars,
 		},

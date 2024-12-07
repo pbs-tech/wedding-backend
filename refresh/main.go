@@ -149,7 +149,7 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		Headers: map[string]string{
 			"Content-Type": "application/json",
 		},
-		Body: fmt.Sprintf(`{"refreshToken": "%s"}`, refreshToken),
+		Body: fmt.Sprintf(`{"jwtToken": "%s"}`, refreshToken),
 	}, nil
 }
 
