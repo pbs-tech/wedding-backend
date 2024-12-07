@@ -46,6 +46,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 		CorsConfiguration: &apigatewayv2.ApiCorsConfigurationArgs{
 			AllowMethods: pulumi.StringArray{
 				pulumi.String("POST"),
+				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
 				pulumi.String("https://peebles.lol"),
