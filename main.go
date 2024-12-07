@@ -29,9 +29,7 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 		return nil, err
 	}
 	params := []*ssm.Parameter{authPasswordParam, jwtSecretParam}
-	if err != nil {
-		return nil, err
-	}
+
 	authLambda, err := createLambda(ctx,
 		"auth",
 		"./bin/auth.zip",
