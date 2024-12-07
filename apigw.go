@@ -48,12 +48,18 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 				pulumi.String("POST"),
 			},
 			AllowOrigins: pulumi.StringArray{
-				pulumi.String("*"),
+				pulumi.String("https://peebles.lol"),
 			},
 			AllowHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
+				pulumi.String("Authorization"),
 				pulumi.String("Origin"),
 			},
+			ExposeHeaders: pulumi.StringArray{
+				pulumi.String("Content-Type"),
+				pulumi.String("Authorization"),
+			},
+			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
 	})
 	if err != nil {
