@@ -7,17 +7,21 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/golang-jwt/jwt/v5"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type ParameterStore struct {
 	client *ssm.Client
+}
+
+type Claims struct {
+	jwt.RegisteredClaims
 }
 
 type RequestBody struct {
@@ -25,9 +29,9 @@ type RequestBody struct {
 }
 
 func NewParameterStoreClient() *ParameterStore {
-	cfg, err := config.LoadDefaultConfig((context.TODO()))
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		panic(err)
+		log.Fatalf("unable to load AWS config: %v", err)
 	}
 	client := ssm.NewFromConfig(cfg)
 	return &ParameterStore{
@@ -42,27 +46,56 @@ func (ps *ParameterStore) Get(name string, withDecryption bool) string {
 	}
 	results, err := ps.client.GetParameter(context.TODO(), input)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to retrieve parameter %s: %v", name, err)
 	}
 	if results.Parameter.Value == nil {
-		panic(fmt.Errorf("failed to find param %s", name))
+		log.Fatalf("failed to find param %s", name)
 	}
 	return *results.Parameter.Value
 }
 
-func VerifyToken(jwtToken string, jwtSecret string) error {
-	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
+// GenerateRefreshToken generates a JWT refresh token with a 30-day expiration
+func GenerateRefreshToken(jwtSecret string) (string, error) {
+	expirationTime := time.Now().Add(30 * 24 * time.Hour) // 30 days
+
+	// Create the JWT claims (no username in this case)
+	claims := &Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return err
+		return "", fmt.Errorf("could not sign the token: %v", err)
 	}
-	if !token.Valid {
-		return fmt.Errorf(("invalid token"))
-	}
-	return nil
+	return signedToken, nil
 }
 
+// VerifyToken verifies the JWT token and returns the claims or an error
+func VerifyToken(tokenString, secretKey string) (*Claims, error) {
+	// Parse and verify the token
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// Check that the signing method matches
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("could not parse token: %v", err)
+	}
+
+	// Check if the token is valid and return the claims
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	} else {
+		return nil, fmt.Errorf("invalid token")
+	}
+}
+
+// handleRequest handles incoming API Gateway requests
 func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	paramStore := NewParameterStoreClient()
@@ -80,24 +113,44 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			Body: "Invalid request body",
 		}, nil
 	}
-	result := VerifyToken(body.JWTToken, jwtSecret)
-	if result == nil {
+
+	// If JWTToken is provided, verify it
+	if body.JWTToken != "" {
+		// Verify the provided token
+		_, err := VerifyToken(body.JWTToken, jwtSecret)
+		if err != nil {
+			// If verification fails, return Unauthorized response
+			return events.APIGatewayV2HTTPResponse{
+				StatusCode: http.StatusUnauthorized,
+				Headers: map[string]string{
+					"Content-Type": "application/json",
+				},
+				Body: "Unauthorized",
+			}, nil
+		}
+	}
+
+	// Generate a new refresh token
+	refreshToken, err := GenerateRefreshToken(jwtSecret)
+	if err != nil {
+		log.Printf("Failed to generate refresh token: %v", err)
 		return events.APIGatewayV2HTTPResponse{
-			StatusCode: http.StatusAccepted,
+			StatusCode: http.StatusInternalServerError,
 			Headers: map[string]string{
 				"Content-Type": "application/json",
 			},
-			Body: "Authorised",
-		}, nil
-	} else {
-		return events.APIGatewayV2HTTPResponse{
-			StatusCode: http.StatusUnauthorized,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: "Unauthorised",
+			Body: "Failed to generate refresh token",
 		}, nil
 	}
+
+	// Return the refresh token
+	return events.APIGatewayV2HTTPResponse{
+		StatusCode: http.StatusOK,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Body: fmt.Sprintf(`{"refreshToken": "%s"}`, refreshToken),
+	}, nil
 }
 
 func main() {
