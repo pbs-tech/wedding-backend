@@ -50,9 +50,15 @@ func createLambdaPermission(ctx *pulumi.Context, lambdaFunction *lambda.Function
 
 // Main function to create API Gateway components
 func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, error) {
+	// If frontendURL is not an empty string, then disable the API Gateway execution endpoint
+	disableExecuteApiEndpoint := pulumi.Bool(false) // Default value
+	if frontendURL != "" {
+		disableExecuteApiEndpoint = pulumi.Bool(true)
+	}
 	apiGateway, err := apigatewayv2.NewApi(ctx, "wedding-api", &apigatewayv2.ApiArgs{
-		Name:         pulumi.String("wedding-api"),
-		ProtocolType: pulumi.String("HTTP"),
+		Name:                      pulumi.String("wedding-api"),
+		ProtocolType:              pulumi.String("HTTP"),
+		DisableExecuteApiEndpoint: disableExecuteApiEndpoint,
 		CorsConfiguration: &apigatewayv2.ApiCorsConfigurationArgs{
 			AllowMethods: pulumi.StringArray{
 				pulumi.String("GET"),
@@ -60,7 +66,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
-				pulumi.String(frontendURL),
+				pulumi.String("*"),
 			},
 			AllowHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
@@ -71,8 +77,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 				pulumi.String("Content-Type"),
 				pulumi.String("Authorization"),
 			},
-			AllowCredentials: pulumi.Bool(true),
-			MaxAge:           pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
+			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
 	})
 	if err != nil {
@@ -141,32 +146,23 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 
 	// DNS configuration (optional)
 	conf := config.New(ctx, "")
-	apiSubdomain := conf.Get("api-subdomain")
-	if apiSubdomain != "" {
+	apiDomainStr := conf.Get("api-domain")
+	if apiDomainStr != "" {
 		// Load DNS zone
 		dnsZone := conf.Require("dns-zone")
 		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
 		if err != nil {
 			return nil, err
 		}
-		apiDomainName, err := configureDns(ctx, apiSubdomain, zone.ZoneId)
+		apiDomainName, err := configureDnsForApiGateway(ctx, apiDomainStr, zone.ZoneId)
 		if err != nil {
 			return nil, err
 		}
-
-		// Configure domain mapping
-		_, err = apigatewayv2.NewApiMapping(ctx,
-			"api-domain-mapping",
-			&apigatewayv2.ApiMappingArgs{
-				ApiId:      apiGateway.ID(),
-				DomainName: apiDomainName.DomainName,
-				Stage:      apiStage.ID(),
-			})
+		err = mapDnsToApiGateway(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zone.ZoneId)
 		if err != nil {
 			return nil, err
 		}
-
-		customUrl := pulumi.Sprintf("https://%s/", apiSubdomain)
+		customUrl := pulumi.Sprintf("https://%s/", apiDomainStr)
 		ctx.Export("custom-url", customUrl)
 	}
 

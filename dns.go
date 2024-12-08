@@ -7,57 +7,37 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func configureDns(ctx *pulumi.Context, apiSubdomain string, zoneId string) (*apigatewayv2.DomainName, error) {
+func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId string) (*apigatewayv2.DomainName, error) {
 
-	// Create api subdomain
-	apiZone, err := route53.NewZone(ctx, "api-route53-zone", &route53.ZoneArgs{
-		Name: pulumi.String(apiSubdomain),
-	})
-	if err != nil {
-		return nil, err
-	}
-	apiSubdomainZoneId := apiZone.ZoneId
-
-	// Create DNS record
-	_, err = route53.NewRecord(ctx, "api-route53-ns-record",
-		&route53.RecordArgs{
-			ZoneId:  pulumi.String(zoneId),
-			Type:    pulumi.String(route53.RecordTypeNS),
-			Name:    pulumi.String(apiSubdomain),
-			Ttl:     pulumi.Int(172800),
-			Records: apiZone.NameServers,
-		})
-	if err != nil {
-		return nil, err
-	}
 	// Request ACM cert
 	sslCert, err := acm.NewCertificate(ctx,
 		"ssl-cert",
 		&acm.CertificateArgs{
-			DomainName:       pulumi.String(apiSubdomain),
+			DomainName:       pulumi.String(apiDomainStr),
 			ValidationMethod: pulumi.String("DNS"),
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	domainValidationOption := sslCert.DomainValidationOptions.ApplyT(func(options []acm.CertificateDomainValidationOption) interface{} {
+	domainValidationOption := sslCert.DomainValidationOptions.ApplyT(func(options []acm.CertificateDomainValidationOption) acm.CertificateDomainValidationOption {
 		return options[0]
 	})
+
 	// Create DNS record
 	sslCertValidationDnsRecord, err := route53.NewRecord(ctx,
 		"ssl-cert-validation-dns-record",
 		&route53.RecordArgs{
-			ZoneId: apiSubdomainZoneId,
-			Name: domainValidationOption.ApplyT(func(option interface{}) string {
-				return *option.(acm.CertificateDomainValidationOption).ResourceRecordName
+			ZoneId: pulumi.String(zoneId),
+			Name: domainValidationOption.ApplyT(func(option acm.CertificateDomainValidationOption) string {
+				return *option.ResourceRecordName
 			}).(pulumi.StringOutput),
-			Type: domainValidationOption.ApplyT(func(option interface{}) string {
-				return *option.(acm.CertificateDomainValidationOption).ResourceRecordType
+			Type: domainValidationOption.ApplyT(func(option acm.CertificateDomainValidationOption) string {
+				return *option.ResourceRecordType
 			}).(pulumi.StringOutput),
 			Records: pulumi.StringArray{
-				domainValidationOption.ApplyT(func(option interface{}) string {
-					return *option.(acm.CertificateDomainValidationOption).ResourceRecordValue
+				domainValidationOption.ApplyT(func(option acm.CertificateDomainValidationOption) string {
+					return *option.ResourceRecordValue
 				}).(pulumi.StringOutput),
 			},
 			Ttl: pulumi.Int(10 * 60), // 10 mins
@@ -82,7 +62,7 @@ func configureDns(ctx *pulumi.Context, apiSubdomain string, zoneId string) (*api
 	// configure apigw v2 with domain name and cert
 	apiDomainName, err := apigatewayv2.NewDomainName(ctx, "api-domain-name",
 		&apigatewayv2.DomainNameArgs{
-			DomainName: pulumi.String(apiSubdomain),
+			DomainName: pulumi.String(apiDomainStr),
 			DomainNameConfiguration: &apigatewayv2.DomainNameDomainNameConfigurationArgs{
 				CertificateArn: validatedSslCert.CertificateArn,
 				EndpointType:   pulumi.String("REGIONAL"),
@@ -93,23 +73,40 @@ func configureDns(ctx *pulumi.Context, apiSubdomain string, zoneId string) (*api
 	if err != nil {
 		return nil, err
 	}
-
-	// Create DNS record
-	_, err = route53.NewRecord(ctx, "api-route53-a-record",
-		&route53.RecordArgs{
-			ZoneId: apiSubdomainZoneId,
-			Type:   pulumi.String("A"),
-			Name:   apiDomainName.DomainName,
-			Aliases: route53.RecordAliasArray{
-				route53.RecordAliasArgs{
-					Name:                 apiDomainName.DomainName,
-					EvaluateTargetHealth: pulumi.Bool(false),
-					ZoneId:               apiDomainName.DomainNameConfiguration.HostedZoneId().Elem(),
-				},
-			},
-		})
-	if err != nil {
-		return nil, err
-	}
 	return apiDomainName, nil
+}
+
+func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName *apigatewayv2.DomainName, apiStageId pulumi.IDOutput, apiGatewayId pulumi.IDOutput, zoneId string) error {
+	// Configure domain mapping: Associate the domain with the API stage
+	_, err := apigatewayv2.NewApiMapping(ctx,
+		"api-domain-mapping",
+		&apigatewayv2.ApiMappingArgs{
+			ApiId:      apiGatewayId,
+			DomainName: apiDomainName.DomainName,
+			Stage:      apiStageId,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	// Use the Hosted Zone ID of the API Gateway Domain Name (not the newly created Zone)
+	apiDomainHostedZoneId := apiDomainName.DomainNameConfiguration.HostedZoneId().Elem()
+	apiDomainNameTargetDomainName := apiDomainName.DomainNameConfiguration.TargetDomainName().Elem()
+	_, err = route53.NewRecord(ctx, "api-route53-a-record", &route53.RecordArgs{
+		Aliases: route53.RecordAliasArray{
+			&route53.RecordAliasArgs{
+				EvaluateTargetHealth: pulumi.Bool(false),
+				Name:                 apiDomainNameTargetDomainName,
+				ZoneId:               apiDomainHostedZoneId},
+		},
+		Name:   pulumi.String(apiDomainStr),
+		Type:   pulumi.String(route53.RecordTypeA),
+		ZoneId: pulumi.String(zoneId),
+	}, pulumi.Protect(true))
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
