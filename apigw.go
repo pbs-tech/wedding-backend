@@ -61,7 +61,6 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 			},
 			AllowOrigins: pulumi.StringArray{
 				pulumi.String(frontendURL),
-				pulumi.String("*"),
 			},
 			AllowHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
@@ -72,7 +71,8 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 				pulumi.String("Content-Type"),
 				pulumi.String("Authorization"),
 			},
-			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
+			AllowCredentials: pulumi.Bool(true),
+			MaxAge:           pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
 	})
 	if err != nil {
