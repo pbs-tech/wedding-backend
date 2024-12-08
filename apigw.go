@@ -35,7 +35,6 @@ func createOptionsRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, route
 	return apigatewayv2.NewRoute(ctx, routeKey, &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
 		RouteKey: pulumi.Sprintf("OPTIONS %s", routeKey),
-		Target:   pulumi.String("aws:proxy"), // CORS preflight route target
 	})
 }
 
@@ -61,6 +60,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 			},
 			AllowOrigins: pulumi.StringArray{
 				pulumi.String("https://peebles.lol"),
+				pulumi.String("*"),
 			},
 			AllowHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
