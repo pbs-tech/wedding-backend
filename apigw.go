@@ -69,6 +69,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 			ExposeHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
 				pulumi.String("Authorization"),
+				pulumi.String("Origin"),
 			},
 			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
