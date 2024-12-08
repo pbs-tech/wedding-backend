@@ -19,12 +19,23 @@ func createLambdaIntegration(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, 
 	})
 }
 
-// Helper function to create a route for the API Gateway
-func createRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, routeKey string, integrationId pulumi.IDInput) (*apigatewayv2.Route, error) {
+// Helper function to create a POST route for the API Gateway with Lambda integration
+func createPostRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, routeKey string, integrationId pulumi.IDInput) (*apigatewayv2.Route, error) {
+	// Create and return the POST route with Lambda integration
 	return apigatewayv2.NewRoute(ctx, routeKey, &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
-		RouteKey: pulumi.String(routeKey),
+		RouteKey: pulumi.Sprintf("POST %s", routeKey),
 		Target:   pulumi.Sprintf("integrations/%s", integrationId),
+	})
+}
+
+// Helper function to create an OPTIONS route for CORS preflight in the API Gateway
+func createOptionsRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, routeKey string) (*apigatewayv2.Route, error) {
+	// Create and return the OPTIONS route for CORS preflight handling
+	return apigatewayv2.NewRoute(ctx, routeKey, &apigatewayv2.RouteArgs{
+		ApiId:    apiGateway.ID(),
+		RouteKey: pulumi.Sprintf("OPTIONS %s", routeKey),
+		Target:   pulumi.String("aws:proxy"), // CORS preflight route target
 	})
 }
 
@@ -81,21 +92,21 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 		return nil, err
 	}
 
-	// Create Routes
-	_, err = createRoute(ctx, apiGateway, "POST /auth", authLambdaIntegration.ID())
+	// Create POST Routes
+	_, err = createPostRoute(ctx, apiGateway, "/auth", authLambdaIntegration.ID())
 	if err != nil {
 		return nil, err
 	}
-	_, err = createRoute(ctx, apiGateway, "POST /refresh", refreshTokenLambdaIntegration.ID())
+	_, err = createPostRoute(ctx, apiGateway, "/refresh", refreshTokenLambdaIntegration.ID())
 	if err != nil {
 		return nil, err
 	}
-
-	_, err = createRoute(ctx, apiGateway, "OPTIONS /auth", authLambdaIntegration.ID())
+	// Create OPTIONS routes for CORS preflight handling
+	_, err = createOptionsRoute(ctx, apiGateway, "/auth")
 	if err != nil {
 		return nil, err
 	}
-	_, err = createRoute(ctx, apiGateway, "OPTIONS /refresh", refreshTokenLambdaIntegration.ID())
+	_, err = createOptionsRoute(ctx, apiGateway, "/refresh")
 	if err != nil {
 		return nil, err
 	}
