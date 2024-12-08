@@ -59,7 +59,6 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
-				pulumi.String("https://peebles.lol"),
 				pulumi.String("*"),
 			},
 			AllowHeaders: pulumi.StringArray{
@@ -71,8 +70,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 				pulumi.String("Content-Type"),
 				pulumi.String("Authorization"),
 			},
-			AllowCredentials: pulumi.Bool(true),
-			MaxAge:           pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
+			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
 	})
 	if err != nil {
