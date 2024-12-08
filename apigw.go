@@ -49,7 +49,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
-				pulumi.String("*"),
+				pulumi.String("peebles.lol"),
 			},
 			AllowHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
