@@ -89,7 +89,7 @@ func main() {
 		}
 		apiUrl := apiGateway.ApiEndpoint
 		if apiDomainName != nil {
-			apiUrl = apiDomainName.DomainName
+			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
 		}
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
