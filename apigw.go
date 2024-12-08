@@ -49,7 +49,7 @@ func createLambdaPermission(ctx *pulumi.Context, lambdaFunction *lambda.Function
 }
 
 // Main function to create API Gateway components
-func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, error) {
+func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
 	// If frontendURL is not an empty string, then disable the API Gateway execution endpoint
 	disableExecuteApiEndpoint := pulumi.Bool(false) // Default value
 	if frontendURL != "" {
@@ -81,7 +81,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	authLambda := lambdas[0]
@@ -90,40 +90,40 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 	// Create Lambda integrations
 	authLambdaIntegration, err := createLambdaIntegration(ctx, apiGateway, authLambda, "auth-lambda-integration")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	refreshTokenLambdaIntegration, err := createLambdaIntegration(ctx, apiGateway, refreshTokenLambda, "refresh-lambda-integration")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create POST Routes
 	_, err = createPostRoute(ctx, apiGateway, "POST /auth", authLambdaIntegration.ID())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	_, err = createPostRoute(ctx, apiGateway, "POST /refresh", refreshTokenLambdaIntegration.ID())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// Create OPTIONS routes for CORS preflight handling
 	_, err = createOptionsRoute(ctx, apiGateway, "OPTIONS /auth")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	_, err = createOptionsRoute(ctx, apiGateway, "OPTIONS /refresh")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create Lambda permissions for API Gateway
 	_, err = createLambdaPermission(ctx, authLambda, apiGateway, "auth-lambda-api-gateway-permission")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	_, err = createLambdaPermission(ctx, refreshTokenLambda, apiGateway, "refresh-lambda-api-gateway-permission")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create deployment
@@ -131,7 +131,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 		ApiId: apiGateway.ID(),
 	}, pulumi.DependsOn([]pulumi.Resource{authLambdaIntegration, apiGateway}))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Create API stage
@@ -141,7 +141,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 		AutoDeploy: pulumi.Bool(true),
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// DNS configuration (optional)
@@ -152,19 +152,20 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 		dnsZone := conf.Require("dns-zone")
 		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		apiDomainName, err := configureDnsForApiGateway(ctx, apiDomainStr, zone.ZoneId)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		err = mapDnsToApiGateway(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zone.ZoneId)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		customUrl := pulumi.Sprintf("https://%s/", apiDomainStr)
 		ctx.Export("custom-url", customUrl)
+		return apiGateway, apiDomainName, nil
 	}
 
-	return apiGateway, nil
+	return apiGateway, nil, nil
 }

@@ -55,12 +55,12 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, error) {
-	apiGateway, err := createApiGatewayComponents(ctx, lambdas, frontendURL)
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
+	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, frontendURL)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return apiGateway, err
+	return apiGateway, apiDomainName, err
 }
 
 func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput) (*amplify.App, error) {
@@ -83,21 +83,25 @@ func main() {
 		if err != nil {
 			return err
 		}
-		apiGateway, err := createApiGateway(ctx, lambdas, frontendURL)
+		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, frontendURL)
 		if err != nil {
 			return err
 		}
-
+		apiUrl := apiGateway.ApiEndpoint
+		if apiDomainName != nil {
+			apiUrl = apiDomainName.DomainName
+		}
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
 			return err
 		}
 		frontendBuildSpecStr := string(frontendBuildSpec)
-		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr, apiGateway.ApiEndpoint)
+		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr, apiUrl)
 		if err != nil {
 			return err
 		}
-		ctx.Export("api-url", apiGateway.ApiEndpoint)
+
+		ctx.Export("api-url", apiUrl)
 		ctx.Export("frontend-url", frontEnd.DefaultDomain)
 		return nil
 	})
