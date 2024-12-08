@@ -98,11 +98,12 @@ func VerifyToken(tokenString, secretKey string) (*Claims, error) {
 // handleRequest handles incoming API Gateway requests
 func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
+	frontendURL := os.Getenv("FRONTEND_URL")
 	paramStore := NewParameterStoreClient()
 	jwtSecret := paramStore.Get(jwtSigningParam, true)
 	responseHeaders := map[string]string{
 		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Origin":  "https://peebles.lol",
+		"Access-Control-Allow-Origin":  frontendURL,
 		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
 	}

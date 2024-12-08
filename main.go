@@ -11,7 +11,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSigingSecret string) ([]*lambda.Function, error) {
+func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
 	authPasswordParam, err := createSSMParameter(ctx,
 		"authPassword",
 		"Password for users to use to access the site",
@@ -36,6 +36,7 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 		pulumi.StringMap{
 			"AUTH_PASSWORD_PARAM":      params[0].Name,
 			"JWT_SIGNING_SECRET_PARAM": params[1].Name,
+			"FRONTEND_DOMAIN":          pulumi.String(frontendDomain),
 		},
 	)
 	if err != nil {
@@ -46,6 +47,7 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 		"./bin/refresh.zip",
 		pulumi.StringMap{
 			"JWT_SIGNING_SECRET_PARAM": params[1].Name,
+			"FRONTEND_DOMAIN":          pulumi.String(frontendDomain),
 		})
 	if err != nil {
 		return nil, err
@@ -53,8 +55,8 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function) (*apigatewayv2.Api, error) {
-	apiGateway, err := createApiGatewayComponents(ctx, lambdas)
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, error) {
+	apiGateway, err := createApiGatewayComponents(ctx, lambdas, frontendURL)
 	if err != nil {
 		return nil, err
 	}
@@ -76,12 +78,12 @@ func main() {
 		frontendDomain := conf.Require("frontend-domain")
 		authPassword := conf.Require("authPassword")
 		jwtSecret := conf.Require("jwtSecret")
-
-		lambdas, err := createLambdaResources(ctx, authPassword, jwtSecret)
+		frontendURL := "https://" + frontendDomain
+		lambdas, err := createLambdaResources(ctx, authPassword, jwtSecret, frontendDomain)
 		if err != nil {
 			return err
 		}
-		apiGateway, err := createApiGateway(ctx, lambdas)
+		apiGateway, err := createApiGateway(ctx, lambdas, frontendURL)
 		if err != nil {
 			return err
 		}

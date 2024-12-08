@@ -89,12 +89,13 @@ func CreateJWT(secretKey string) (string, error) {
 
 // HandleRequest is the Lambda handler that processes the request and generates a JWT token
 func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	frontendURL := os.Getenv("FRONTEND_URL")
 	// Get parameters from SSM
 	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	responseHeaders := map[string]string{
 		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Origin":  "https://peebles.lol",
+		"Access-Control-Allow-Origin":  frontendURL,
 		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
 	}

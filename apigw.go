@@ -49,7 +49,7 @@ func createLambdaPermission(ctx *pulumi.Context, lambdaFunction *lambda.Function
 }
 
 // Main function to create API Gateway components
-func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function) (*apigatewayv2.Api, error) {
+func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, error) {
 	apiGateway, err := apigatewayv2.NewApi(ctx, "wedding-api", &apigatewayv2.ApiArgs{
 		Name:         pulumi.String("wedding-api"),
 		ProtocolType: pulumi.String("HTTP"),
@@ -60,6 +60,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 				pulumi.String("OPTIONS"),
 			},
 			AllowOrigins: pulumi.StringArray{
+				pulumi.String(frontendURL),
 				pulumi.String("*"),
 			},
 			AllowHeaders: pulumi.StringArray{
