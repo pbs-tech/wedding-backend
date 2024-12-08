@@ -100,17 +100,20 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	paramStore := NewParameterStoreClient()
 	jwtSecret := paramStore.Get(jwtSigningParam, true)
-
+	responseHeaders := map[string]string{
+		"Content-Type":                 "application/json",
+		"Access-Control-Allow-Origin":  "https://peebles.lol",
+		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
+	}
 	var body RequestBody
 	err := json.Unmarshal([]byte(apiGatewayRequest.Body), &body)
 	if err != nil {
 		log.Printf("Failed to parse request body: %v", &apiGatewayRequest.Body)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusBadRequest,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: "Invalid request body",
+			Headers:    responseHeaders,
+			Body:       "Invalid request body",
 		}, nil
 	}
 
@@ -122,10 +125,8 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			// If verification fails, return Unauthorized response
 			return events.APIGatewayV2HTTPResponse{
 				StatusCode: http.StatusUnauthorized,
-				Headers: map[string]string{
-					"Content-Type": "application/json",
-				},
-				Body: "Unauthorized",
+				Headers:    responseHeaders,
+				Body:       "Unauthorized",
 			}, nil
 		}
 	}
@@ -136,20 +137,16 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		log.Printf("Failed to generate refresh token: %v", err)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: "Failed to generate refresh token",
+			Headers:    responseHeaders,
+			Body:       "Failed to generate refresh token",
 		}, nil
 	}
 
 	// Return the refresh token
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: http.StatusOK,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: fmt.Sprintf(`{"jwtToken": "%s"}`, refreshToken),
+		Headers:    responseHeaders,
+		Body:       fmt.Sprintf(`{"jwtToken": "%s"}`, refreshToken),
 	}, nil
 }
 

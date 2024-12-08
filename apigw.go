@@ -24,7 +24,7 @@ func createPostRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, routeKey
 	// Create and return the POST route with Lambda integration
 	return apigatewayv2.NewRoute(ctx, routeKey, &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
-		RouteKey: pulumi.Sprintf("POST %s", routeKey),
+		RouteKey: pulumi.String(routeKey),
 		Target:   pulumi.Sprintf("integrations/%s", integrationId),
 	})
 }
@@ -34,7 +34,7 @@ func createOptionsRoute(ctx *pulumi.Context, apiGateway *apigatewayv2.Api, route
 	// Create and return the OPTIONS route for CORS preflight handling
 	return apigatewayv2.NewRoute(ctx, routeKey, &apigatewayv2.RouteArgs{
 		ApiId:    apiGateway.ID(),
-		RouteKey: pulumi.Sprintf("OPTIONS %s", routeKey),
+		RouteKey: pulumi.String(routeKey),
 	})
 }
 
@@ -55,6 +55,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 		ProtocolType: pulumi.String("HTTP"),
 		CorsConfiguration: &apigatewayv2.ApiCorsConfigurationArgs{
 			AllowMethods: pulumi.StringArray{
+				pulumi.String("GET"),
 				pulumi.String("POST"),
 				pulumi.String("OPTIONS"),
 			},
@@ -69,7 +70,6 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 			ExposeHeaders: pulumi.StringArray{
 				pulumi.String("Content-Type"),
 				pulumi.String("Authorization"),
-				pulumi.String("Origin"),
 			},
 			MaxAge: pulumi.Int(3600), // Optional: Time to cache preflight responses (in seconds)
 		},
@@ -92,20 +92,20 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 	}
 
 	// Create POST Routes
-	_, err = createPostRoute(ctx, apiGateway, "/auth", authLambdaIntegration.ID())
+	_, err = createPostRoute(ctx, apiGateway, "POST /auth", authLambdaIntegration.ID())
 	if err != nil {
 		return nil, err
 	}
-	_, err = createPostRoute(ctx, apiGateway, "/refresh", refreshTokenLambdaIntegration.ID())
+	_, err = createPostRoute(ctx, apiGateway, "POST /refresh", refreshTokenLambdaIntegration.ID())
 	if err != nil {
 		return nil, err
 	}
 	// Create OPTIONS routes for CORS preflight handling
-	_, err = createOptionsRoute(ctx, apiGateway, "/auth")
+	_, err = createOptionsRoute(ctx, apiGateway, "OPTIONS /auth")
 	if err != nil {
 		return nil, err
 	}
-	_, err = createOptionsRoute(ctx, apiGateway, "/refresh")
+	_, err = createOptionsRoute(ctx, apiGateway, "OPTIONS /refresh")
 	if err != nil {
 		return nil, err
 	}

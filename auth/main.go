@@ -92,16 +92,19 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	// Get parameters from SSM
 	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
-
+	responseHeaders := map[string]string{
+		"Content-Type":                 "application/json",
+		"Access-Control-Allow-Origin":  "https://peebles.lol",
+		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
+	}
 	// Check if environment variables are set
 	if authPasswordParam == "" || jwtSigningParam == "" {
 		log.Println("Environment variables for SSM parameters are missing.")
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Required environment variables are not set"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Required environment variables are not set"}`,
 		}, nil
 	}
 
@@ -114,10 +117,8 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		log.Printf("Error fetching auth password: %v", err)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Error retrieving auth password"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Error retrieving auth password"}`,
 		}, nil
 	}
 	authPasswordHash, err := HashPassword(authPassword)
@@ -125,10 +126,8 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		log.Printf("Error hashing auth password: %v", err)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Error hashing auth password"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Error hashing auth password"}`,
 		}, nil
 	}
 
@@ -137,10 +136,8 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		log.Printf("Error fetching JWT secret: %v", err)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Error retrieving JWT secret"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Error retrieving JWT secret"}`,
 		}, nil
 	}
 
@@ -151,10 +148,8 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		log.Printf("Failed to parse request body: %v", apiGatewayRequest.Body)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusBadRequest,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Invalid request body"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Invalid request body"}`,
 		}, nil
 	}
 
@@ -167,30 +162,24 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			log.Printf("Error creating JWT token: %v", err)
 			return events.APIGatewayV2HTTPResponse{
 				StatusCode: http.StatusInternalServerError,
-				Headers: map[string]string{
-					"Content-Type": "application/json",
-				},
-				Body: `{"message": "Error creating JWT token"}`,
+				Headers:    responseHeaders,
+				Body:       `{"message": "Error creating JWT token"}`,
 			}, nil
 		}
 
 		// Return the JWT token in the response body
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusOK,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: fmt.Sprintf(`{"jwtToken": "%s"}`, token),
+			Headers:    responseHeaders,
+			Body:       fmt.Sprintf(`{"jwtToken": "%s"}`, token),
 		}, nil
 	} else {
 		// Handle the case where the password comparison failed
 		log.Printf("Password comparison failed: %v", err)
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusUnauthorized,
-			Headers: map[string]string{
-				"Content-Type": "application/json",
-			},
-			Body: `{"message": "Unauthorized"}`,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Unauthorized"}`,
 		}, nil
 	}
 }
