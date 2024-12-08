@@ -91,6 +91,15 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function)
 		return nil, err
 	}
 
+	_, err = createRoute(ctx, apiGateway, "OPTIONS /auth", authLambdaIntegration.ID())
+	if err != nil {
+		return nil, err
+	}
+	_, err = createRoute(ctx, apiGateway, "OPTIONS /refresh", refreshTokenLambdaIntegration.ID())
+	if err != nil {
+		return nil, err
+	}
+
 	// Create Lambda permissions for API Gateway
 	_, err = createLambdaPermission(ctx, authLambda, apiGateway, "auth-lambda-api-gateway-permission")
 	if err != nil {
