@@ -94,10 +94,11 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	responseHeaders := map[string]string{
-		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Origin":  frontendURL,
-		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
+		"Content-Type":                     "application/json",
+		"Access-Control-Allow-Origin":      frontendURL,
+		"Access-Control-Allow-Methods":     "GET, POST, OPTIONS",
+		"Access-Control-Allow-Headers":     "Content-Type, Authorization, Origin",
+		"Access-Control-Allow-Credentials": "true",
 	}
 	// Check if environment variables are set
 	if authPasswordParam == "" || jwtSigningParam == "" {

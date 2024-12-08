@@ -102,10 +102,11 @@ func handleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	paramStore := NewParameterStoreClient()
 	jwtSecret := paramStore.Get(jwtSigningParam, true)
 	responseHeaders := map[string]string{
-		"Content-Type":                 "application/json",
-		"Access-Control-Allow-Origin":  frontendURL,
-		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type, Authorization, Origin",
+		"Content-Type":                     "application/json",
+		"Access-Control-Allow-Origin":      frontendURL,
+		"Access-Control-Allow-Methods":     "GET, POST, OPTIONS",
+		"Access-Control-Allow-Headers":     "Content-Type, Authorization, Origin",
+		"Access-Control-Allow-Credentials": "true",
 	}
 	var body RequestBody
 	err := json.Unmarshal([]byte(apiGatewayRequest.Body), &body)
