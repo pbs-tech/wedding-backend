@@ -11,11 +11,11 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
-	authPasswordParam, err := createSSMParameter(ctx,
-		"authPassword",
+func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
+	dayGuestPasswordParam, err := createSSMParameter(ctx,
+		"dayGuestPassword",
 		"Password for users to use to access the site",
-		authPasswordValue,
+		dayGuestPasswordValue,
 	)
 	if err != nil {
 		return nil, err
@@ -28,13 +28,13 @@ func createLambdaResources(ctx *pulumi.Context, authPasswordValue string, jwtSig
 	if err != nil {
 		return nil, err
 	}
-	params := []*ssm.Parameter{authPasswordParam, jwtSecretParam}
+	params := []*ssm.Parameter{dayGuestPasswordParam, jwtSecretParam}
 
 	authLambda, err := createLambda(ctx,
 		"auth",
 		"./bin/auth.zip",
 		pulumi.StringMap{
-			"AUTH_PASSWORD_PARAM":      params[0].Name,
+			"DAY_GUEST_PASSWORD_PARAM": params[0].Name,
 			"JWT_SIGNING_SECRET_PARAM": params[1].Name,
 			"FRONTEND_DOMAIN":          pulumi.String(frontendDomain),
 		},
@@ -76,10 +76,10 @@ func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		conf := config.New(ctx, "")
 		frontendDomain := conf.Require("frontend-domain")
-		authPassword := conf.Require("authPassword")
+		dayGuestPassword := conf.Require("dayGuestPassword")
 		jwtSecret := conf.Require("jwtSecret")
 		frontendURL := "https://" + frontendDomain
-		lambdas, err := createLambdaResources(ctx, authPassword, jwtSecret, frontendDomain)
+		lambdas, err := createLambdaResources(ctx, dayGuestPassword, jwtSecret, frontendDomain)
 		if err != nil {
 			return err
 		}

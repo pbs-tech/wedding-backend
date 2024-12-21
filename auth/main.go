@@ -91,7 +91,7 @@ func CreateJWT(secretKey string) (string, error) {
 func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 	frontendURL := os.Getenv("FRONTEND_URL")
 	// Get parameters from SSM
-	authPasswordParam := os.Getenv("AUTH_PASSWORD_PARAM")
+	dayGuestPasswordParam := os.Getenv("DAY_GUEST_PASSWORD_PARAM")
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	responseHeaders := map[string]string{
 		"Content-Type":                     "application/json",
@@ -101,7 +101,7 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		"Access-Control-Allow-Credentials": "true",
 	}
 	// Check if environment variables are set
-	if authPasswordParam == "" || jwtSigningParam == "" {
+	if dayGuestPasswordParam == "" || jwtSigningParam == "" {
 		log.Println("Environment variables for SSM parameters are missing.")
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
@@ -114,7 +114,7 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	paramStore := NewParameterStoreClient()
 
 	// Fetch the parameters from SSM
-	authPassword, err := paramStore.Get(authPasswordParam, true)
+	dayGuestPassword, err := paramStore.Get(dayGuestPasswordParam, true)
 	if err != nil {
 		log.Printf("Error fetching auth password: %v", err)
 		return events.APIGatewayV2HTTPResponse{
@@ -123,7 +123,7 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 			Body:       `{"message": "Error retrieving auth password"}`,
 		}, nil
 	}
-	authPasswordHash, err := HashPassword(authPassword)
+	dayGuestPasswordHash, err := HashPassword(dayGuestPassword)
 	if err != nil {
 		log.Printf("Error hashing auth password: %v", err)
 		return events.APIGatewayV2HTTPResponse{
@@ -156,7 +156,7 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	}
 
 	// Compare the provided password with the stored hash in SSM
-	err = bcrypt.CompareHashAndPassword([]byte(authPasswordHash), []byte(body.UserPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(dayGuestPasswordHash), []byte(body.UserPassword))
 	if err == nil {
 		// Generate a new JWT token if password is correct
 		token, err := CreateJWT(jwtSecret)
