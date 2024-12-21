@@ -29,6 +29,7 @@ type RequestBody struct {
 
 // Claims struct defines the JWT claims (only exp and iat)
 type Claims struct {
+	IsDayGuest bool `json:"isDayGuest"`
 	jwt.RegisteredClaims
 }
 
@@ -66,12 +67,13 @@ func HashPassword(password string) (string, error) {
 }
 
 // CreateJWT generates a new JWT token with expiration and issue time
-func CreateJWT(secretKey string) (string, error) {
+func CreateJWT(secretKey string, isDayGuest bool) (string, error) {
 	// Set the expiration time (e.g., 1 hour)
 	expirationTime := time.Now().Add(1 * time.Hour) // 1 hour expiration time
 
 	// Create the claims with expiration and issued at time
 	claims := Claims{
+		IsDayGuest: isDayGuest,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()), // Issued at the current time
@@ -92,6 +94,8 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	frontendURL := os.Getenv("FRONTEND_URL")
 	// Get parameters from SSM
 	dayGuestPasswordParam := os.Getenv("DAY_GUEST_PASSWORD_PARAM")
+	eveningGuestPasswordParam := os.Getenv("EVENING_GUEST_PASSWORD_PARAM")
+
 	jwtSigningParam := os.Getenv("JWT_SIGNING_SECRET_PARAM")
 	responseHeaders := map[string]string{
 		"Content-Type":                     "application/json",
@@ -101,7 +105,7 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		"Access-Control-Allow-Credentials": "true",
 	}
 	// Check if environment variables are set
-	if dayGuestPasswordParam == "" || jwtSigningParam == "" {
+	if dayGuestPasswordParam == "" || eveningGuestPasswordParam == "" || jwtSigningParam == "" {
 		log.Println("Environment variables for SSM parameters are missing.")
 		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
@@ -124,6 +128,25 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 		}, nil
 	}
 	dayGuestPasswordHash, err := HashPassword(dayGuestPassword)
+	if err != nil {
+		log.Printf("Error hashing auth password: %v", err)
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusInternalServerError,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Error hashing auth password"}`,
+		}, nil
+	}
+
+	eveningGuestPassword, err := paramStore.Get(eveningGuestPasswordParam, true)
+	if err != nil {
+		log.Printf("Error fetching auth password: %v", err)
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusInternalServerError,
+			Headers:    responseHeaders,
+			Body:       `{"message": "Error retrieving auth password"}`,
+		}, nil
+	}
+	eveningGuestPasswordHash, err := HashPassword(eveningGuestPassword)
 	if err != nil {
 		log.Printf("Error hashing auth password: %v", err)
 		return events.APIGatewayV2HTTPResponse{
@@ -156,10 +179,31 @@ func HandleRequest(ctx context.Context, apiGatewayRequest events.APIGatewayV2HTT
 	}
 
 	// Compare the provided password with the stored hash in SSM
-	err = bcrypt.CompareHashAndPassword([]byte(dayGuestPasswordHash), []byte(body.UserPassword))
-	if err == nil {
+	dayGuestErr := bcrypt.CompareHashAndPassword([]byte(dayGuestPasswordHash), []byte(body.UserPassword))
+	eveningGuestErr := bcrypt.CompareHashAndPassword([]byte(eveningGuestPasswordHash), []byte(body.UserPassword))
+	isDayGuest := false
+	if dayGuestErr == nil {
 		// Generate a new JWT token if password is correct
-		token, err := CreateJWT(jwtSecret)
+		isDayGuest = true
+		token, err := CreateJWT(jwtSecret, isDayGuest)
+		if err != nil {
+			log.Printf("Error creating JWT token: %v", err)
+			return events.APIGatewayV2HTTPResponse{
+				StatusCode: http.StatusInternalServerError,
+				Headers:    responseHeaders,
+				Body:       `{"message": "Error creating JWT token"}`,
+			}, nil
+		}
+
+		// Return the JWT token in the response body
+		return events.APIGatewayV2HTTPResponse{
+			StatusCode: http.StatusOK,
+			Headers:    responseHeaders,
+			Body:       fmt.Sprintf(`{"jwtToken": "%s"}`, token),
+		}, nil
+	} else if eveningGuestErr == nil {
+		// Generate a new JWT token if password is correct
+		token, err := CreateJWT(jwtSecret, isDayGuest)
 		if err != nil {
 			log.Printf("Error creating JWT token: %v", err)
 			return events.APIGatewayV2HTTPResponse{

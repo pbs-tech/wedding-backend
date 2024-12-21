@@ -11,11 +11,19 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
+func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, eveningGuestPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
 	dayGuestPasswordParam, err := createSSMParameter(ctx,
 		"dayGuestPassword",
-		"Password for users to use to access the site",
+		"Password for day guests to use to access the site",
 		dayGuestPasswordValue,
+	)
+	if err != nil {
+		return nil, err
+	}
+	eveningGuestPasswordParam, err := createSSMParameter(ctx,
+		"eveningGuestPassword",
+		"Password for evening guests to use to access the site",
+		eveningGuestPasswordValue,
 	)
 	if err != nil {
 		return nil, err
@@ -28,15 +36,16 @@ func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, jw
 	if err != nil {
 		return nil, err
 	}
-	params := []*ssm.Parameter{dayGuestPasswordParam, jwtSecretParam}
+	params := []*ssm.Parameter{dayGuestPasswordParam, eveningGuestPasswordParam, jwtSecretParam}
 
 	authLambda, err := createLambda(ctx,
 		"auth",
 		"./bin/auth.zip",
 		pulumi.StringMap{
-			"DAY_GUEST_PASSWORD_PARAM": params[0].Name,
-			"JWT_SIGNING_SECRET_PARAM": params[1].Name,
-			"FRONTEND_DOMAIN":          pulumi.String(frontendDomain),
+			"DAY_GUEST_PASSWORD_PARAM":     params[0].Name,
+			"EVENING_GUEST_PASSWORD_PARAM": params[1].Name,
+			"JWT_SIGNING_SECRET_PARAM":     params[2].Name,
+			"FRONTEND_DOMAIN":              pulumi.String(frontendDomain),
 		},
 	)
 	if err != nil {
@@ -77,9 +86,10 @@ func main() {
 		conf := config.New(ctx, "")
 		frontendDomain := conf.Require("frontend-domain")
 		dayGuestPassword := conf.Require("dayGuestPassword")
+		eveningGuestPassword := conf.Require("eveningGuestPassword")
 		jwtSecret := conf.Require("jwtSecret")
 		frontendURL := "https://" + frontendDomain
-		lambdas, err := createLambdaResources(ctx, dayGuestPassword, jwtSecret, frontendDomain)
+		lambdas, err := createLambdaResources(ctx, dayGuestPassword, eveningGuestPassword, jwtSecret, frontendDomain)
 		if err != nil {
 			return err
 		}

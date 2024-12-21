@@ -7,3 +7,5 @@ config:
     secure: AAABAI/QLCNfnXRuDNpzTId+pwXCYsNyMeLImZHgZRTYNGdFDVEjgJqJ8UxJtmamSbbZWD30BFk=
   wedding-backend:dayGuestPassword:
     secure: AAABAIUQBC++S8mTHiR5qCI792Qv+qtFJJu7UnQpaxAq6QjLi7uXg0tENkY=
+  wedding-backend:eveningGuestPassword:
+    secure: AAABAIqM0QT6ndx2tHng5ukwrcOjf3qemSYFxZNMmlcfZksuyNj9ScvECeU=
