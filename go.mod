@@ -11,7 +11,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.64.0
 	github.com/pulumi/pulumi/sdk/v3 v3.142.0
-	golang.org/x/crypto v0.30.0
+	golang.org/x/crypto v0.31.0
 )
 
 require (
