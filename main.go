@@ -72,6 +72,11 @@ func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, frontendU
 	return apiGateway, apiDomainName, err
 }
 
+func createCachingResources(ctx * pulumi.Context, frontendURL pulumi.StringOutput, apiArn pulumi.StringOutput) , error) {
+	cloudfront, err := createS3Bucket(ctx, frontendURL)
+	return cloudfront, err
+}
+
 func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput) (*amplify.App, error) {
 	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr, apiEndpoint)
 	if err != nil {
@@ -80,6 +85,8 @@ func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEnd
 	_, err = createAmplifyDomain(ctx, app, frontEndDomain)
 	return app, err
 }
+
+
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
@@ -101,6 +108,8 @@ func main() {
 		if apiDomainName != nil {
 			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
 		}
+		cloudfront, err := createCachingResources(ctx, frontendURL, apiGateway.Arn)
+
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
 			return err
