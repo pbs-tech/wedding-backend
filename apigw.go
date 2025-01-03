@@ -150,15 +150,16 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 	if apiDomainStr != "" {
 		// Load DNS zone
 		dnsZone := conf.Require("dns-zone")
+
 		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
 		if err != nil {
 			return nil, nil, err
 		}
-		apiDomainName, err := configureDnsForApiGateway(ctx, apiDomainStr, zone.ZoneId)
+		apiDomainName, err := configureApiDomain(ctx, apiDomainStr, zone.ZoneId)
 		if err != nil {
 			return nil, nil, err
 		}
-		err = mapDnsToApiGateway(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zone.ZoneId)
+		err = mapApiDomain(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zone.ZoneId)
 		if err != nil {
 			return nil, nil, err
 		}

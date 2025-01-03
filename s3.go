@@ -10,7 +10,7 @@ func createS3Bucket(ctx *pulumi.Context, bucketName string) (*s3.Bucket, error) 
 		Bucket:       pulumi.String(bucketName),
 		ForceDestroy: pulumi.Bool(true),
 		Tags: pulumi.StringMap{
-			"Name": pulumi.String("My bucket"),
+			"Name": pulumi.String(bucketName),
 		},
 	})
 	if err != nil {
@@ -23,5 +23,6 @@ func createS3Bucket(ctx *pulumi.Context, bucketName string) (*s3.Bucket, error) 
 	if err != nil {
 		return err
 	}
+
 	return bucket, err
 }

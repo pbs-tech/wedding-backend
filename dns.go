@@ -7,7 +7,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId string) (*apigatewayv2.DomainName, error) {
+func configureApiDomain(ctx *pulumi.Context, apiDomainStr string, zoneId string) (*apigatewayv2.DomainName, error) {
 
 	// Request ACM cert
 	sslCert, err := acm.NewCertificate(ctx,
@@ -76,7 +76,7 @@ func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId 
 	return apiDomainName, nil
 }
 
-func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName *apigatewayv2.DomainName, apiStageId pulumi.IDOutput, apiGatewayId pulumi.IDOutput, zoneId string) error {
+func mapApiDomain(ctx *pulumi.Context, apiDomainStr string, apiDomainName *apigatewayv2.DomainName, apiStageId pulumi.IDOutput, apiGatewayId pulumi.IDOutput, zoneId string) error {
 	// Configure domain mapping: Associate the domain with the API stage
 	_, err := apigatewayv2.NewApiMapping(ctx,
 		"api-domain-mapping",
@@ -109,4 +109,28 @@ func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName 
 		return err
 	}
 	return nil
+}
+
+func createAmplifyDomain(ctx *pulumi.Context, frontEnd *amplify.App, domain string) (*amplify.DomainAssociation, error) {
+	frontendDomain, err := amplify.NewDomainAssociation(ctx, "wedding-frontend-domain", &amplify.DomainAssociationArgs{
+		AppId: frontEnd.ID(),
+		CertificateSettings: &amplify.DomainAssociationCertificateSettingsArgs{
+			Type: pulumi.String("AMPLIFY_MANAGED"),
+		},
+		DomainName: pulumi.String(domain),
+		SubDomains: amplify.DomainAssociationSubDomainArray{
+			&amplify.DomainAssociationSubDomainArgs{
+				BranchName: pulumi.String("main"),
+				Prefix:     pulumi.String(""),
+			},
+			&amplify.DomainAssociationSubDomainArgs{
+				BranchName: pulumi.String("main"),
+				Prefix:     pulumi.String("www"),
+			},
+		},
+	}, pulumi.Protect(true))
+	if err != nil {
+		return frontendDomain, err
+	}
+	return frontendDomain, err
 }
