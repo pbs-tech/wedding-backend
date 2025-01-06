@@ -64,8 +64,8 @@ func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, ev
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
-	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, frontendURL)
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
+	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, zoneId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,12 +88,15 @@ func main() {
 		dayGuestPassword := conf.Require("dayGuestPassword")
 		eveningGuestPassword := conf.Require("eveningGuestPassword")
 		jwtSecret := conf.Require("jwtSecret")
-		frontendURL := "https://" + frontendDomain
+		rootDnsZone, err := createDnsZone(ctx, frontendDomain)
+		if err != nil {
+			return err
+		}
 		lambdas, err := createLambdaResources(ctx, dayGuestPassword, eveningGuestPassword, jwtSecret, frontendDomain)
 		if err != nil {
 			return err
 		}
-		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, frontendURL)
+		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
 		if err != nil {
 			return err
 		}

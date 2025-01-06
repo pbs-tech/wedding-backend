@@ -7,7 +7,17 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId string) (*apigatewayv2.DomainName, error) {
+func createDnsZone(ctx *pulumi.Context, domainName string) (*route53.Zone, error) {
+	zone, err := route53.NewZone(ctx, domainName, &route53.ZoneArgs{
+		Name: pulumi.String(domainName),
+	}, pulumi.Protect(true))
+	if err != nil {
+		return nil, err
+	}
+	return zone, nil
+}
+
+func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId pulumi.StringOutput) (*apigatewayv2.DomainName, error) {
 
 	// Request ACM cert
 	sslCert, err := acm.NewCertificate(ctx,
@@ -28,7 +38,7 @@ func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId 
 	sslCertValidationDnsRecord, err := route53.NewRecord(ctx,
 		"ssl-cert-validation-dns-record",
 		&route53.RecordArgs{
-			ZoneId: pulumi.String(zoneId),
+			ZoneId: zoneId,
 			Name: domainValidationOption.ApplyT(func(option acm.CertificateDomainValidationOption) string {
 				return *option.ResourceRecordName
 			}).(pulumi.StringOutput),
@@ -76,7 +86,7 @@ func configureDnsForApiGateway(ctx *pulumi.Context, apiDomainStr string, zoneId 
 	return apiDomainName, nil
 }
 
-func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName *apigatewayv2.DomainName, apiStageId pulumi.IDOutput, apiGatewayId pulumi.IDOutput, zoneId string) error {
+func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName *apigatewayv2.DomainName, apiStageId pulumi.IDOutput, apiGatewayId pulumi.IDOutput, zoneId pulumi.StringOutput) error {
 	// Configure domain mapping: Associate the domain with the API stage
 	_, err := apigatewayv2.NewApiMapping(ctx,
 		"api-domain-mapping",
@@ -102,7 +112,7 @@ func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName 
 		},
 		Name:   pulumi.String(apiDomainStr),
 		Type:   pulumi.String(route53.RecordTypeA),
-		ZoneId: pulumi.String(zoneId),
+		ZoneId: zoneId,
 	}, pulumi.Protect(true))
 
 	if err != nil {

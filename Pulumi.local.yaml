@@ -1,5 +1,4 @@
 config:
-  wedding-backend:dns-zone: localhost
   wedding-backend:frontend-domain: localhost:3000
   wedding-backend:api-domain: localhost:4566
   wedding-backend:jwtSecret: test
@@ -193,6 +192,7 @@ config:
     - mediapackagev2: http://localhost:4566
     - mediastore: http://localhost:4566
     - memorydb: http://localhost:4566
+    - mgn: http://localhost:4566
     - mq: http://localhost:4566
     - msk: http://localhost:4566
     - mwaa: http://localhost:4566
@@ -286,6 +286,7 @@ config:
     - synthetics: http://localhost:4566
     - taxsettings: http://localhost:4566
     - timestreaminfluxdb: http://localhost:4566
+    - timestreamquery: http://localhost:4566
     - timestreamwrite: http://localhost:4566
     - transcribe: http://localhost:4566
     - transcribeservice: http://localhost:4566
@@ -304,3 +305,5 @@ config:
   aws:s3UsePathStyle: "true"
   aws:skipCredentialsValidation: "true"
   aws:skipRequestingAccountId: "true"
+  aws:accessKey: test
+  aws:secretKey: test
