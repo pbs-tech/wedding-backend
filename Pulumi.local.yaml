@@ -300,9 +300,7 @@ config:
     - workspaces: http://localhost:4566
     - workspacesweb: http://localhost:4566
     - xray: http://localhost:4566
-  aws:accessKey: test
   aws:region: us-east-1
   aws:s3UsePathStyle: "true"
-  aws:secretKey: test
   aws:skipCredentialsValidation: "true"
   aws:skipRequestingAccountId: "true"
