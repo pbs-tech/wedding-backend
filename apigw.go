@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
-	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/route53"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
@@ -49,16 +48,11 @@ func createLambdaPermission(ctx *pulumi.Context, lambdaFunction *lambda.Function
 }
 
 // Main function to create API Gateway components
-func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, frontendURL string) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
-	// If frontendURL is not an empty string, then disable the API Gateway execution endpoint
-	disableExecuteApiEndpoint := pulumi.Bool(false) // Default value
-	if frontendURL != "" {
-		disableExecuteApiEndpoint = pulumi.Bool(true)
-	}
+func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
 	apiGateway, err := apigatewayv2.NewApi(ctx, "wedding-api", &apigatewayv2.ApiArgs{
 		Name:                      pulumi.String("wedding-api"),
 		ProtocolType:              pulumi.String("HTTP"),
-		DisableExecuteApiEndpoint: disableExecuteApiEndpoint,
+		DisableExecuteApiEndpoint: pulumi.Bool(true),
 		CorsConfiguration: &apigatewayv2.ApiCorsConfigurationArgs{
 			AllowMethods: pulumi.StringArray{
 				pulumi.String("GET"),
@@ -149,17 +143,11 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 	apiDomainStr := conf.Get("api-domain")
 	if apiDomainStr != "" {
 		// Load DNS zone
-		dnsZone := conf.Require("dns-zone")
-
-		zone, err := route53.LookupZone(ctx, &route53.LookupZoneArgs{Name: pulumi.StringRef(dnsZone)})
+		apiDomainName, err := configureDnsForApiGateway(ctx, apiDomainStr, zoneId)
 		if err != nil {
 			return nil, nil, err
 		}
-		apiDomainName, err := configureApiDomain(ctx, apiDomainStr, zone.ZoneId)
-		if err != nil {
-			return nil, nil, err
-		}
-		err = mapApiDomain(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zone.ZoneId)
+		err = mapDnsToApiGateway(ctx, apiDomainStr, apiDomainName, apiStage.ID(), apiGateway.ID(), zoneId)
 		if err != nil {
 			return nil, nil, err
 		}
