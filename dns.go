@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/acm"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/amplify"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/route53"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -119,4 +120,28 @@ func mapDnsToApiGateway(ctx *pulumi.Context, apiDomainStr string, apiDomainName 
 		return err
 	}
 	return nil
+}
+
+func createAmplifyDomain(ctx *pulumi.Context, frontEnd *amplify.App, domain string) (*amplify.DomainAssociation, error) {
+	frontendDomain, err := amplify.NewDomainAssociation(ctx, "wedding-frontend-domain", &amplify.DomainAssociationArgs{
+		AppId: frontEnd.ID(),
+		CertificateSettings: &amplify.DomainAssociationCertificateSettingsArgs{
+			Type: pulumi.String("AMPLIFY_MANAGED"),
+		},
+		DomainName: pulumi.String(domain),
+		SubDomains: amplify.DomainAssociationSubDomainArray{
+			&amplify.DomainAssociationSubDomainArgs{
+				BranchName: pulumi.String("main"),
+				Prefix:     pulumi.String(""),
+			},
+			&amplify.DomainAssociationSubDomainArgs{
+				BranchName: pulumi.String("main"),
+				Prefix:     pulumi.String("www"),
+			},
+		},
+	}, pulumi.Protect(true))
+	if err != nil {
+		return frontendDomain, err
+	}
+	return frontendDomain, err
 }

@@ -35,27 +35,3 @@ func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string, apiGatewayEndpoi
 	}
 	return frontEnd, nil
 }
-
-func createAmplifyDomain(ctx *pulumi.Context, frontEnd *amplify.App, domain string) (*amplify.DomainAssociation, error) {
-	frontendDomain, err := amplify.NewDomainAssociation(ctx, "wedding-frontend-domain", &amplify.DomainAssociationArgs{
-		AppId: frontEnd.ID(),
-		CertificateSettings: &amplify.DomainAssociationCertificateSettingsArgs{
-			Type: pulumi.String("AMPLIFY_MANAGED"),
-		},
-		DomainName: pulumi.String(domain),
-		SubDomains: amplify.DomainAssociationSubDomainArray{
-			&amplify.DomainAssociationSubDomainArgs{
-				BranchName: pulumi.String("main"),
-				Prefix:     pulumi.String(""),
-			},
-			&amplify.DomainAssociationSubDomainArgs{
-				BranchName: pulumi.String("main"),
-				Prefix:     pulumi.String("www"),
-			},
-		},
-	}, pulumi.Protect(true))
-	if err != nil {
-		return frontendDomain, err
-	}
-	return frontendDomain, err
-}

@@ -9,7 +9,6 @@ env:
   AWS_REGION: eu-west-2
 
 permissions:
-      id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkout
 
 jobs:
@@ -18,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           role-to-assume: ${{ secrets.AWS_IAC_ROLE }} #change to reflect your IAM role’s ARN
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
@@ -29,7 +28,7 @@ jobs:
 
 
       - name: Setup Go ✨
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: '1.23'
 
@@ -40,7 +39,7 @@ jobs:
         run: make
 
       - name: Applying infrastructure 🚀
-        uses: pulumi/actions@v6
+        uses: pulumi/actions@c7fad9e2f0b79653172b36538b8b34b3c0291952
         with:
           command: up
           stack-name: live

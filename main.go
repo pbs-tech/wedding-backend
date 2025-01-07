@@ -5,6 +5,7 @@ import (
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/amplify"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/cloudfront"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -64,12 +65,16 @@ func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, ev
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, *cloudfront.Distribution, error) {
 	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, zoneId)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return apiGateway, apiDomainName, err
+	distribution, err := createCloudfrontDistributionForApiGateway(ctx, "api-gateway", apiGateway)
+	if err != nil {
+		return apiGateway, apiDomainName, distribution, err
+	}
+	return apiGateway, apiDomainName, distribution, err
 }
 
 func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput) (*amplify.App, error) {
@@ -96,10 +101,11 @@ func main() {
 		if err != nil {
 			return err
 		}
-		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
+		apiGateway, apiDomainName, distribution, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
 		if err != nil {
 			return err
 		}
+		cloudfrontDomain := distribution.DomainName
 		apiUrl := apiGateway.ApiEndpoint
 		if apiDomainName != nil {
 			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
@@ -115,6 +121,7 @@ func main() {
 		}
 
 		ctx.Export("api-url", apiUrl)
+		ctx.Export("cloudfront-domain", cloudfrontDomain)
 		ctx.Export("frontend-url", frontEnd.DefaultDomain)
 		return nil
 	})

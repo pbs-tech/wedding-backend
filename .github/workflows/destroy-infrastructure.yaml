@@ -6,7 +6,6 @@ env:
   AWS_REGION: eu-west-2
 
 permissions:
-      id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkout
 
 jobs:
@@ -15,17 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: run kics Scan
+        uses: checkmarx/kics-github-action@94469746ec2c43de89a42fb9d2a80070f5d25b16
+        with:
+          path: '.'
+          type: pulumi
+          output_path: kics/
+      # Display the results in json format
+      - name: display kics results
+        run: |
+          cat kics/results.json
 
       - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           role-to-assume: ${{ secrets.AWS_IAC_ROLE }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Applying infrastructure 🚀
-        uses: pulumi/actions@v4
+        uses: pulumi/actions@c7fad9e2f0b79653172b36538b8b34b3c0291952
         with:
           command: destroy
           stack-name: dev
