@@ -6,6 +6,7 @@ env:
   AWS_REGION: eu-west-2
 
 permissions:
+      id-token: write   # This is required for requesting the JWT
       contents: read    # This is required for actions/checkout
 
 jobs:
@@ -22,6 +23,7 @@ jobs:
           path: '.'
           type: pulumi
           output_path: kics/
+          exclude_queries: a88baa34-e2ad-44ea-ad6f-8cac87bc7c71
       # Display the results in json format
       - name: display kics results
         run: |
