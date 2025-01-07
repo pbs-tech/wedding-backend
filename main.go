@@ -5,6 +5,7 @@ import (
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/amplify"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
+	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/cloudfront"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -64,22 +65,16 @@ func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, ev
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, *cloudfront.Distribution, error) {
 	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, zoneId)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return apiGateway, apiDomainName, err
-}
-
-func createCachingResources(ctx *pulumi.Context, cloudfrontDistName pulumi.StringOutput, apiArn pulumi.StringOutput) (*cloudfront.Distribution, error) {
-	distributionBucket, err := createS3Bucket(ctx, cloudfrontDistName)
+	distribution, err := createCloudfrontDistributionForApiGateway(ctx, "api-gateway", apiGateway)
 	if err != nil {
-		return nil, err
+		return apiGateway, apiDomainName, distribution, err
 	}
-	distribution, err := createCloudfrontDistribution(ctx, cloudfrontDistName, distributionBucket)
-
-	return distribution, err
+	return apiGateway, apiDomainName, distribution, err
 }
 
 func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput) (*amplify.App, error) {
@@ -106,20 +101,14 @@ func main() {
 		if err != nil {
 			return err
 		}
-		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
+		apiGateway, apiDomainName, distribution, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
 		if err != nil {
 			return err
 		}
+		cloudfrontDomain := distribution.DomainName
 		apiUrl := apiGateway.ApiEndpoint
 		if apiDomainName != nil {
 			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
-		}
-		cloudfront, cdnDomainName, err := createCachingResources(ctx, frontendURL, apiGateway.Arn)
-		if err != nil {
-			return err
-		}
-		if cdnDomain != nil {
-			cdnUrl = pulumi.Sprintf("https://%s", cdnDomainName.DomainName)
 		}
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
@@ -132,7 +121,7 @@ func main() {
 		}
 
 		ctx.Export("api-url", apiUrl)
-		ctx.Export("cdn-url", cdnUrl)
+		ctx.Export("cloudfront-domain", cloudfrontDomain)
 		ctx.Export("frontend-url", frontEnd.DefaultDomain)
 		return nil
 	})
