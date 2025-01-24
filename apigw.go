@@ -123,7 +123,7 @@ func createApiGatewayComponents(ctx *pulumi.Context, lambdas []*lambda.Function,
 	// Create deployment
 	_, err = apigatewayv2.NewDeployment(ctx, "deployment", &apigatewayv2.DeploymentArgs{
 		ApiId: apiGateway.ID(),
-	}, pulumi.DependsOn([]pulumi.Resource{authLambdaIntegration, apiGateway}))
+	}, pulumi.DependsOn([]pulumi.Resource{authLambdaIntegration, refreshTokenLambdaIntegration, apiGateway}))
 	if err != nil {
 		return nil, nil, err
 	}
