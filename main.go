@@ -101,22 +101,6 @@ func main() {
 		if err != nil {
 			return err
 		}
-<<<<<<< HEAD
-		lambdas, err := createLambdaResources(ctx, dayGuestPassword, eveningGuestPassword, jwtSecret, frontendDomain)
-		if err != nil {
-			return err
-		}
-		apiGateway, apiDomainName, distribution, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
-		if err != nil {
-			return err
-		}
-		cloudfrontDomain := distribution.DomainName
-		apiUrl := apiGateway.ApiEndpoint
-		if apiDomainName != nil {
-			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
-		}
-=======
->>>>>>> 1e52aaf (fix: update github url)
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
 			return err
