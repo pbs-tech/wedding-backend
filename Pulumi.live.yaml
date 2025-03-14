@@ -11,4 +11,4 @@ config:
   wedding-backend:eveningGuestPassword:
     secure: AAABACEbtSE2FtkQct9aQj7pQRpu9yvL0adWXj4RP+v9YzLcjMOgNBM=
   wedding-backend:frontendGithubAccessToken:
-    secure: AAABAG0uWNHoiraPXXL1Dmhq8Lf3KczfV99jac+bZDus2LDt7/r5jL+kdCSqAs7DhUB+BsBOU/x1YOIg1OZ25HPThvgO/lYXNu0+MPLB3w1HBCAN2IAfOLQxLZqkdCx5rk7QXOOH6R3t6H4ZD/8JjmKeJlHcuULFvQHWlZs=
+    secure: AAABAAcjUnO6YQMauOyxZIGw82Z3OAVhnZ/QgGq1cWFIoocyjyTKI6VYdB4aNw8Q6SwQA9zhpi+WZXTTt3BHMMv57u1ReJ00Jzw5306apg+8egQ3pqqcqk/OqtDVzAS4olSRYwqZL0j/cNg0WuthaaPRTEUj8IyMF4juNmQ=
