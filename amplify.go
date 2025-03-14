@@ -6,7 +6,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string, apiGatewayEndpoint pulumi.StringOutput, githubUrl string) (*amplify.App, error) {
+func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string, apiGatewayEndpoint pulumi.StringOutput, frontendGithubUrl string, frontendGithubAccessToken pulumi.StringOutput) (*amplify.App, error) {
 	policyDocument, err := iam.GetPolicyDocument(ctx, &iam.GetPolicyDocumentArgs{
 		Statements: []iam.GetPolicyDocumentStatement{
 			// Statement for CloudWatch Logs
@@ -101,8 +101,30 @@ func createAmplifyApp(ctx *pulumi.Context, buildSpecStr string, apiGatewayEndpoi
 		IamServiceRoleArn: amplifyRole.Arn,
 		Name:              pulumi.String("wedding-frontend"),
 		Platform:          pulumi.String("WEB"),
-		Repository:        pulumi.String(githubUrl),
+		Repository:        pulumi.String(frontendGithubUrl),
+		AccessToken:       frontendGithubAccessToken,
 	})
+	if err != nil {
+		return nil, err
+	}
+	branch, err := amplify.NewBranch(ctx, "wedding-frontend-main-branch", &amplify.BranchArgs{
+		AppId:      frontEnd.ID(),
+		BranchName: pulumi.String("main"),
+		Framework:  pulumi.String("VUE"),
+		EnvironmentVariables: pulumi.StringMap{
+			"VITE_API_URL": apiGatewayEndpoint,
+		},
+		Stage:           pulumi.String("PRODUCTION"),
+		EnableAutoBuild: pulumi.Bool(true),
+	}, pulumi.DependsOn([]pulumi.Resource{frontEnd}))
+	if err != nil {
+		return nil, err
+	}
+	_, err = amplify.NewWebhook(ctx, "wedding-frontend-webhook", &amplify.WebhookArgs{
+		AppId:       frontEnd.ID(),
+		BranchName:  branch.BranchName,
+		Description: pulumi.String("Automatically deploy the frontend on push to the main branch"),
+	}, pulumi.DependsOn([]pulumi.Resource{branch}))
 	if err != nil {
 		return nil, err
 	}

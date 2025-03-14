@@ -11,7 +11,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, eveningGuestPasswordValue string, jwtSigingSecret string, frontendDomain string) ([]*lambda.Function, error) {
+func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue pulumi.StringOutput, eveningGuestPasswordValue pulumi.StringOutput, jwtSigingSecret pulumi.StringOutput, frontendDomain string) ([]*lambda.Function, error) {
 	dayGuestPasswordParam, err := createSSMParameter(ctx,
 		"dayGuestPassword",
 		"Password for day guests to use to access the site",
@@ -72,8 +72,8 @@ func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pu
 	return apiGateway, apiDomainName, err
 }
 
-func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput, githubUrl string) (*amplify.App, error) {
-	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr, apiEndpoint, githubUrl)
+func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput, frontendGithubUrl string, frontendGithubAccessToken pulumi.StringOutput) (*amplify.App, error) {
+	app, err := createAmplifyApp(ctx, frontEndBuildSpecStr, apiEndpoint, frontendGithubUrl, frontendGithubAccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -86,25 +86,23 @@ func main() {
 		conf := config.New(ctx, "")
 		frontendDomain := conf.Require("frontend-domain")
 		apiDomain := conf.Require("api-domain")
-		githubUrl := conf.Require("githubUrl")
+		frontendGithubUrl := conf.Require("frontendGithubUrl")
+		frontendGithubAccessToken := conf.RequireSecret("frontendGithubAccessToken")
 		apiUrl := pulumi.Sprintf("https://%s", apiDomain)
 
-		dayGuestPassword := conf.Require("dayGuestPassword")
-		eveningGuestPassword := conf.Require("eveningGuestPassword")
-		jwtSecret := conf.Require("jwtSecret")
+		dayGuestPassword := conf.RequireSecret("dayGuestPassword")
+		eveningGuestPassword := conf.RequireSecret("eveningGuestPassword")
+		jwtSecret := conf.RequireSecret("jwtSecret")
 		rootDnsZone, err := createDnsZone(ctx, frontendDomain)
 		if err != nil {
 			return err
-		}
-		if apiDomainName != nil {
-			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
 		}
 		frontendBuildSpec, err := os.ReadFile("npm.yaml")
 		if err != nil {
 			return err
 		}
 		frontendBuildSpecStr := string(frontendBuildSpec)
-		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr, apiUrl, githubUrl)
+		frontEnd, err := createAmplifyResources(ctx, frontendDomain, frontendBuildSpecStr, apiUrl, frontendGithubUrl, frontendGithubAccessToken)
 		if err != nil {
 			return err
 		}
