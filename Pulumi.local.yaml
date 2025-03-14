@@ -4,7 +4,7 @@ config:
   wedding-backend:jwtSecret: test
   wedding-backend:dayGuestPassword: test
   wedding-backend:eveningGuestPassword: test
-  wedding-backend:githubUrl: https://github.com/pbs-tech/wedding-frontend
+  wedding-backend:frontendGithubUrl: https://github.com/pbs-tech/wedding-frontend
   aws:endpoints:
     - accessanalyzer: http://localhost:4566
     - account: http://localhost:4566
