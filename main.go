@@ -5,7 +5,6 @@ import (
 
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/amplify"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/apigatewayv2"
-	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/cloudfront"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/lambda"
 	"github.com/pulumi/pulumi-aws/sdk/v6/go/aws/ssm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -65,16 +64,12 @@ func createLambdaResources(ctx *pulumi.Context, dayGuestPasswordValue string, ev
 	return []*lambda.Function{authLambda, refreshTokenLambda}, err
 }
 
-func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, *cloudfront.Distribution, error) {
+func createApiGateway(ctx *pulumi.Context, lambdas []*lambda.Function, zoneId pulumi.StringOutput) (*apigatewayv2.Api, *apigatewayv2.DomainName, error) {
 	apiGateway, apiDomainName, err := createApiGatewayComponents(ctx, lambdas, zoneId)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	distribution, err := createCloudfrontDistributionForApiGateway(ctx, "api-gateway", apiGateway)
-	if err != nil {
-		return apiGateway, apiDomainName, distribution, err
-	}
-	return apiGateway, apiDomainName, distribution, err
+	return apiGateway, apiDomainName, err
 }
 
 func createAmplifyResources(ctx *pulumi.Context, frontEndDomain string, frontEndBuildSpecStr string, apiEndpoint pulumi.StringOutput, githubUrl string) (*amplify.App, error) {
@@ -101,16 +96,6 @@ func main() {
 		if err != nil {
 			return err
 		}
-		lambdas, err := createLambdaResources(ctx, dayGuestPassword, eveningGuestPassword, jwtSecret, frontendDomain)
-		if err != nil {
-			return err
-		}
-		apiGateway, apiDomainName, distribution, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
-		if err != nil {
-			return err
-		}
-		cloudfrontDomain := distribution.DomainName
-		apiUrl := apiGateway.ApiEndpoint
 		if apiDomainName != nil {
 			apiUrl = pulumi.Sprintf("https://%s", apiDomainName.DomainName)
 		}
@@ -123,15 +108,15 @@ func main() {
 		if err != nil {
 			return err
 		}
+
 		lambdas, err := createLambdaResources(ctx, dayGuestPassword, eveningGuestPassword, jwtSecret, frontendDomain)
 		if err != nil {
 			return err
 		}
-		_, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
+		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
 		if err != nil {
 			return err
 		}
-
 		ctx.Export("api-url", apiDomainName.DomainName)
 		ctx.Export("frontend-url", frontEnd.DefaultDomain)
 		return nil
