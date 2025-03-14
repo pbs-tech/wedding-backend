@@ -111,7 +111,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-		apiGateway, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
+		_, apiDomainName, err := createApiGateway(ctx, lambdas, rootDnsZone.ZoneId)
 		if err != nil {
 			return err
 		}
