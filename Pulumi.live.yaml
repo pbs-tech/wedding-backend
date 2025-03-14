@@ -3,9 +3,12 @@ config:
   wedding-backend:frontend-domain: peebles.lol
   wedding-backend:api-domain: api.peebles.lol
   wedding-backend:cdn-domain: cdn.peebles.lol
+  wedding-backend:frontendGithubUrl: https://github.com/pbs-tech/wedding-frontend
   wedding-backend:jwtSecret:
     secure: AAABAI/QLCNfnXRuDNpzTId+pwXCYsNyMeLImZHgZRTYNGdFDVEjgJqJ8UxJtmamSbbZWD30BFk=
   wedding-backend:dayGuestPassword:
-    secure: AAABAN7dyk+AFWx1KWfAFDeBnIY137BpqY/uZPSarRmTpqNfL98bQQ==
+    secure: AAABAL2ilpmkJpTQiDe2dtYMNQhW+VGv6aZbvYIvv94rhH/rheEehw==
   wedding-backend:eveningGuestPassword:
     secure: AAABALajYcoQF76CNTjDs/bye9P2U9143HgsmuPrz23ktRa3H7PTQ8w=
+  wedding-backend:frontendGithubAccessToken:
+    secure: AAABAG0uWNHoiraPXXL1Dmhq8Lf3KczfV99jac+bZDus2LDt7/r5jL+kdCSqAs7DhUB+BsBOU/x1YOIg1OZ25HPThvgO/lYXNu0+MPLB3w1HBCAN2IAfOLQxLZqkdCx5rk7QXOOH6R3t6H4ZD/8JjmKeJlHcuULFvQHWlZs=
