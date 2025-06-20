@@ -6,11 +6,10 @@ require (
 	github.com/aws/aws-lambda-go v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.9
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.57.2
-	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/pulumi/pulumi-aws/sdk v1.31.0
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.72.0
-	github.com/pulumi/pulumi/sdk/v3 v3.156.0
-	golang.org/x/crypto v0.36.0
+	github.com/pulumi/pulumi/sdk/v3 v3.178.0
+	golang.org/x/crypto v0.37.0
 )
 
 require (
@@ -18,9 +17,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
-	github.com/aead/chacha20 v0.0.0-20180709150244-8b13a72661da // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
@@ -45,7 +42,7 @@ require (
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cheggaaa/pb v1.0.29 // indirect
-	github.com/cloudflare/circl v1.6.0 // indirect
+	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -53,11 +50,9 @@ require (
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-git/go-git/v5 v5.14.0 // indirect
-	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.4 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -74,7 +69,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
-	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/opentracing/basictracer-go v1.1.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -83,7 +77,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
-	github.com/pulumi/esc v0.13.0 // indirect
+	github.com/pulumi/esc v0.14.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
@@ -93,6 +87,7 @@ require (
 	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
@@ -102,17 +97,15 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/tools v0.31.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250313205543-e70fdf4c4cb4 // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
-	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
-	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/frand v1.5.1 // indirect
