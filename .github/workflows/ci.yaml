@@ -1,0 +1,51 @@
+# PR checks for the Go lambdas. There were none before, which meant a
+# dependency bump could only be judged by reading it; this gives the
+# auto-merge workflow something real to gate on.
+name: CI
+
+on: pull_request
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Build and vet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # go-version-file keeps this in step with go.mod rather than pinning the
+      # toolchain in two places that can drift apart.
+      - name: Set up Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files need gofmt:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      # There are no _test.go files in this repository yet. `go test ./...`
+      # passes vacuously on a package set with no tests, so running it now means
+      # the check starts doing real work the moment a first test is added,
+      # rather than needing to be remembered and wired up then.
+      - name: Test
+        run: go test ./...

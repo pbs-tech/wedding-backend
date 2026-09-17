@@ -1,11 +1,66 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
+# Dependency updates for the Go modules at the root and the actions pinned in
+# .github/workflows.
+#
+# This replaces the generated starter config, which ran daily with no grouping.
+# go.mod carries 13 aws-sdk-go-v2 modules and 4 pulumi ones, nearly all of them
+# indirect, so ungrouped daily updates produce a steady stream of PRs for
+# transitive bumps nobody reads individually.
+#
+# Updates are grouped by the source that releases them, and every group is
+# restricted to minor and patch. A major is therefore always raised on its own
+# and always lands in front of a human, which is what dependabot-auto-merge.yml
+# relies on: it only approves and merges minor and patch, and only once the CI
+# checks on the PR have passed.
 version: 2
+
 updates:
-  - package-ecosystem: "gomod" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: gomod
+    directory: /
     schedule:
-      interval: "daily"
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    groups:
+      # The aws-sdk-go-v2 modules are released together and their internal
+      # packages expect matching versions, so they are updated as one change.
+      aws-sdk:
+        patterns:
+          - 'github.com/aws/*'
+        update-types:
+          - minor
+          - patch
+      # Same reasoning: pulumi/sdk and pulumi-aws/sdk move in step.
+      pulumi:
+        patterns:
+          - 'github.com/pulumi/*'
+        update-types:
+          - minor
+          - patch
+      go-dependencies:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'github.com/aws/*'
+          - 'github.com/pulumi/*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    # '/' means .github/workflows for this ecosystem, not a directory named '/'.
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
