@@ -37,7 +37,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Applying infrastructure 🚀
-        uses: pulumi/actions@c7fad9e2f0b79653172b36538b8b34b3c0291952
+        uses: pulumi/actions@8e5e406f4007fca908480587cb9893c07090f58d
         with:
           command: destroy
           stack-name: dev
