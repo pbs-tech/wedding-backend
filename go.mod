@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.79.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.83.4
-	github.com/pulumi/pulumi/sdk/v3 v3.268.0
+	github.com/pulumi/pulumi/sdk/v3 v3.269.0
 	golang.org/x/crypto v0.58.0
 )
 
