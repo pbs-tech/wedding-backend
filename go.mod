@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.81.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/pulumi/pulumi-aws/sdk/v6 v6.83.4
-	github.com/pulumi/pulumi/sdk/v3 v3.272.0
+	github.com/pulumi/pulumi/sdk/v3 v3.273.0
 	golang.org/x/crypto v0.58.0
 )
 
@@ -54,7 +54,7 @@ require (
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
 	github.com/go-git/go-billy/v6 v6.0.0-beta.1 // indirect
 	github.com/go-git/go-git/v6 v6.0.0-beta.1 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.6 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
@@ -121,7 +121,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
